@@ -1,0 +1,110 @@
+import 'dart:math';
+
+import 'package:hive/hive.dart';
+
+class ExpenseModel {
+  ExpenseModel({
+    required this.id,
+    required this.amount,
+    required this.category,
+    required DateTime date,
+    required this.note,
+  }) : date = date.toUtc() {
+    if (id.isEmpty) {
+      throw ArgumentError.value(id, 'id', 'Expense id cannot be empty.');
+    }
+    if (amount <= 0) {
+      throw ArgumentError.value(
+          amount, 'amount', 'Expense amount must be positive.');
+    }
+    if (category.trim().isEmpty) {
+      throw ArgumentError.value(
+          category, 'category', 'Expense category cannot be empty.');
+    }
+  }
+
+  factory ExpenseModel.create({
+    required double amount,
+    required String category,
+    required DateTime date,
+    String note = '',
+  }) {
+    return ExpenseModel(
+      id: _ExpenseIdGenerator.generate(),
+      amount: amount,
+      category: category.trim(),
+      date: date,
+      note: note.trim(),
+    );
+  }
+
+  final String id;
+  final double amount;
+  final String category;
+  final DateTime date;
+  final String note;
+
+  ExpenseModel copyWith({
+    String? id,
+    double? amount,
+    String? category,
+    DateTime? date,
+    String? note,
+  }) {
+    return ExpenseModel(
+      id: id ?? this.id,
+      amount: amount ?? this.amount,
+      category: category ?? this.category,
+      date: date ?? this.date,
+      note: note ?? this.note,
+    );
+  }
+}
+
+class ExpenseModelAdapter extends TypeAdapter<ExpenseModel> {
+  static const int typeIdValue = 0;
+
+  @override
+  final int typeId = typeIdValue;
+
+  @override
+  ExpenseModel read(BinaryReader reader) {
+    return ExpenseModel(
+      id: reader.readString(),
+      amount: reader.readDouble(),
+      category: reader.readString(),
+      date: DateTime.fromMillisecondsSinceEpoch(reader.readInt(), isUtc: true),
+      note: reader.readString(),
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, ExpenseModel obj) {
+    writer
+      ..writeString(obj.id)
+      ..writeDouble(obj.amount)
+      ..writeString(obj.category)
+      ..writeInt(obj.date.millisecondsSinceEpoch)
+      ..writeString(obj.note);
+  }
+}
+
+abstract final class _ExpenseIdGenerator {
+  static final Random _random = Random.secure();
+
+  static String generate() {
+    final bytes = List<int>.generate(16, (_) => _random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    return '${_hex(bytes.sublist(0, 4))}-'
+        '${_hex(bytes.sublist(4, 6))}-'
+        '${_hex(bytes.sublist(6, 8))}-'
+        '${_hex(bytes.sublist(8, 10))}-'
+        '${_hex(bytes.sublist(10, 16))}';
+  }
+
+  static String _hex(List<int> bytes) {
+    return bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+  }
+}

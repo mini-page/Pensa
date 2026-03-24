@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-void main() {
-  runApp(const PensaApp());
+import 'core/utils/hive_bootstrap.dart';
+import 'features/expense/presentation/screens/app_shell.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await HiveBootstrap.initialize();
+  runApp(const ProviderScope(child: PensaApp()));
 }
 
 class PensaApp extends StatelessWidget {
@@ -13,29 +19,16 @@ class PensaApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Pensa',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: const Color(0xFFF3F7FC),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF0A6BE8),
+          primary: const Color(0xFF0A6BE8),
+          secondary: const Color(0xFFFF5B6C),
+          surface: Colors.white,
+        ),
+        useMaterial3: true,
       ),
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Pensa - Expenses')),
-      body: const Center(
-        child: Text('No expenses yet'),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // will connect later
-        },
-        child: const Icon(Icons.add),
-      ),
+      home: const AppShell(),
     );
   }
 }
