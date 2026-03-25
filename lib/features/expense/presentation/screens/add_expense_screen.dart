@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../data/models/account_model.dart';
 import '../provider/account_providers.dart';
 import '../provider/expense_providers.dart';
-import '../widgets/account_icons.dart';
+
 import '../widgets/expense_category.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
@@ -78,16 +78,13 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final accounts = accountState.valueOrNull ?? const <AccountModel>[];
     if (!_hasExplicitAccountChoice && accounts.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || _hasExplicitAccountChoice) {
-          return;
-        }
+        if (!mounted || _hasExplicitAccountChoice) return;
         setState(() {
           _selectedAccountId = accounts.first.id;
           _hasExplicitAccountChoice = true;
         });
       });
     }
-    final effectiveAccount = _resolveSelectedAccount(accounts);
     final amount = double.tryParse(_amountText) ?? 0;
     final amountLabel = amount <= 0 ? '₹0' : _formatAmount(amount);
     final selectedCategory = resolveCategory(_selectedCategory);
@@ -99,27 +96,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
           child: Column(
             children: <Widget>[
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFE1EB),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  widget.isEditing ? Icons.edit_rounded : Icons.bolt_rounded,
-                  color: const Color(0xFFFA5B8C),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                widget.isEditing ? 'Edit Transaction.' : 'Blazing Fast Input.',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: const Color(0xFF111A33),
-                      fontWeight: FontWeight.w900,
-                    ),
-              ),
-              const SizedBox(height: 20),
+              // ── Top row: close | toggle | refresh ──
               Row(
                 children: <Widget>[
                   _TopCircleButton(
@@ -150,13 +127,15 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   ),
                   const Spacer(),
                   _TopCircleButton(
-                    icon: Icons.calendar_month_rounded,
+                    icon: Icons.loop,
                     color: const Color(0xFF45D19A),
                     onTap: _pickDate,
                   ),
                 ],
               ),
               const SizedBox(height: 28),
+
+              // ── Amount display ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -182,116 +161,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 ],
               ),
               const SizedBox(height: 14),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                alignment: WrapAlignment.center,
-                children: <Widget>[
-                  GestureDetector(
-                    onTap: _pickCategory,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FB),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(
-                            selectedCategory.icon,
-                            size: 18,
-                            color: selectedCategory.color,
-                          ),
-                          const SizedBox(width: 8),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 150),
-                            child: Text(
-                              selectedCategory.name,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF34435F),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 18,
-                            color: Color(0xFF8B99B0),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap:
-                        accounts.isEmpty ? null : () => _pickAccount(accounts),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF7F8FB),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Icon(
-                            effectiveAccount == null
-                                ? Icons.account_balance_wallet_outlined
-                                : resolveAccountIcon(effectiveAccount.iconKey),
-                            size: 18,
-                            color: const Color(0xFF0A6BE8),
-                          ),
-                          const SizedBox(width: 8),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 150),
-                            child: Text(
-                              effectiveAccount?.name ?? 'No account',
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF34435F),
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 18,
-                            color: Color(0xFF8B99B0),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  _InfoCapsule(
-                    icon: Icons.today_outlined,
-                    label: DateFormat('EEE, d MMM').format(_selectedDate),
-                    onTap: _pickDate,
-                  ),
-                  const SizedBox(width: 10),
-                  _InfoCapsule(
-                    icon: Icons.schedule_rounded,
-                    label: DateFormat('HH:mm').format(_selectedDate),
-                    onTap: _pickTime,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
+
+              // ── Note field ──
               Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFFF7F8FB),
@@ -301,7 +172,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   controller: _noteController,
                   onChanged: (_) => setState(() {}),
                   decoration: InputDecoration(
-                    hintText: 'Add note (optional)',
+                    hintText: 'Add note',
                     prefixIcon: const Icon(Icons.edit_note_rounded),
                     suffixIcon: _noteController.text.isEmpty
                         ? null
@@ -317,7 +188,66 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 14),
+              const SizedBox(width: 10),
+
+              // ── Date | Time | Category in one row ──
+              Row(
+                children: <Widget>[
+                  _InfoCapsule(
+                    icon: Icons.today_outlined,
+                    label: DateFormat('EEE, d MMM').format(_selectedDate),
+                    onTap: _pickDate,
+                  ),
+                  const SizedBox(width: 8),
+                  _InfoCapsule(
+                    icon: Icons.schedule_rounded,
+                    label: DateFormat('HH:mm').format(_selectedDate),
+                    onTap: _pickTime,
+                  ),
+                  const Spacer(),
+                  // Category pill (right-aligned)
+                  GestureDetector(
+                    onTap: _pickCategory,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selectedCategory.color.withValues(alpha: 0.13),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Icon(
+                            selectedCategory.icon,
+                            size: 16,
+                            color: selectedCategory.color,
+                          ),
+                          const SizedBox(width: 6),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 90),
+                            child: Text(
+                              selectedCategory.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: selectedCategory.color,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const Spacer(),
+
+              // ── Keypad ──
               GridView.count(
                 crossAxisCount: 3,
                 shrinkWrap: true,
@@ -358,23 +288,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   }
 
   AccountModel? _resolveSelectedAccount(List<AccountModel> accounts) {
-    if (accounts.isEmpty) {
-      return null;
-    }
-
-    if (_hasExplicitAccountChoice && _selectedAccountId == null) {
-      return null;
-    }
-
+    if (accounts.isEmpty) return null;
+    if (_hasExplicitAccountChoice && _selectedAccountId == null) return null;
     final desiredId = _selectedAccountId ?? widget.initialAccountId;
-    if (desiredId == null) {
-      return accounts.first;
-    }
-
+    if (desiredId == null) return accounts.first;
     for (final account in accounts) {
-      if (account.id == desiredId) {
-        return account;
-      }
+      if (account.id == desiredId) return account;
     }
     return accounts.first;
   }
@@ -389,9 +308,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   void _appendValue(String value) {
     setState(() {
-      if (value == '.' && _amountText.contains('.')) {
-        return;
-      }
+      if (value == '.' && _amountText.contains('.')) return;
       if (_amountText == '0' && value != '.') {
         _amountText = value;
       } else {
@@ -457,10 +374,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                     trailing: category.name == _selectedCategory
-                        ? const Icon(
-                            Icons.check_rounded,
-                            color: Color(0xFF0A6BE8),
-                          )
+                        ? const Icon(Icons.check_rounded,
+                            color: Color(0xFF0A6BE8))
                         : null,
                     onTap: () => Navigator.of(context).pop(category),
                   );
@@ -471,110 +386,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         );
       },
     );
-
-    if (selected == null) {
-      return;
-    }
-
-    setState(() {
-      _selectedCategory = selected.name;
-    });
-  }
-
-  Future<void> _pickAccount(List<AccountModel> accounts) async {
-    final selected = await showModalBottomSheet<AccountModel?>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD7DFEA),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Choose account',
-                    style: TextStyle(
-                      color: Color(0xFF111A33),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFEFF5FF),
-                    child: Icon(
-                      Icons.do_not_disturb_on_outlined,
-                      color: Color(0xFF90A1BE),
-                    ),
-                  ),
-                  title: const Text(
-                    'No account',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  trailing: _selectedAccountId == null
-                      ? const Icon(
-                          Icons.check_rounded,
-                          color: Color(0xFF0A6BE8),
-                        )
-                      : null,
-                  onTap: () => Navigator.of(context).pop(null),
-                ),
-                ...accounts.map((account) {
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFFEFF5FF),
-                      child: Icon(
-                        resolveAccountIcon(account.iconKey),
-                        color: const Color(0xFF0A6BE8),
-                      ),
-                    ),
-                    title: Text(
-                      account.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    trailing: account.id == _selectedAccountId
-                        ? const Icon(
-                            Icons.check_rounded,
-                            color: Color(0xFF0A6BE8),
-                          )
-                        : null,
-                    onTap: () => Navigator.of(context).pop(account),
-                  );
-                }),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _selectedAccountId = selected?.id;
-      _hasExplicitAccountChoice = true;
-    });
+    if (selected == null) return;
+    setState(() => _selectedCategory = selected.name);
   }
 
   Future<void> _pickDate() async {
@@ -584,11 +397,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
     );
-
-    if (picked == null) {
-      return;
-    }
-
+    if (picked == null) return;
     setState(() {
       _selectedDate = DateTime(
         picked.year,
@@ -605,11 +414,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       context: context,
       initialTime: TimeOfDay.fromDateTime(_selectedDate),
     );
-
-    if (picked == null) {
-      return;
-    }
-
+    if (picked == null) return;
     setState(() {
       _selectedDate = DateTime(
         _selectedDate.year,
@@ -636,13 +441,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final effectiveAccountId = _resolveSelectedAccount(accounts)?.id;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter a valid amount before saving.'),
-        ),
+        const SnackBar(content: Text('Enter a valid amount before saving.')),
       );
       return;
     }
-
     if (widget.isEditing) {
       await ref.read(expenseControllerProvider).updateExpense(
             id: widget.expenseId!,
@@ -661,14 +463,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             accountId: effectiveAccountId,
           );
     }
-
-    if (!mounted) {
-      return;
-    }
-
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 }
+
+// ── Reusable sub-widgets ────────────────────────────────────────────────────
 
 class _TopCircleButton extends StatelessWidget {
   const _TopCircleButton({

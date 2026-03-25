@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/utils/hive_bootstrap.dart';
@@ -7,6 +8,13 @@ import 'features/expense/presentation/screens/app_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ),
+  );
   await HiveBootstrap.initialize();
   runApp(const ProviderScope(child: PensaApp()));
 }
@@ -20,7 +28,7 @@ class PensaApp extends ConsumerWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Pensa',
+      title: 'XPensa',
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFF3F7FC),
         colorScheme: ColorScheme.fromSeed(

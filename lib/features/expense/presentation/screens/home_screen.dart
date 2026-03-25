@@ -56,171 +56,168 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       (sum, expense) => sum + expense.amount,
     );
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 120),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _Header(
-              stats: stats,
-              currencyFormat: currencyFormat,
-              privacyModeEnabled: privacyModeEnabled,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  _FeatureRow(
-                    onSoonTap: (label) => _showSoonMessage(context, label),
-                  ),
-                  const SizedBox(height: 22),
-                  QuickActionBar(
-                    actions: const <QuickActionItem>[
-                      QuickActionItem(label: 'SMS', icon: Icons.sms_outlined),
-                      QuickActionItem(
-                        label: 'VOICE',
-                        icon: Icons.mic_none_rounded,
-                      ),
-                      QuickActionItem(
-                        label: 'SPLIT',
-                        icon: Icons.group_outlined,
-                      ),
-                      QuickActionItem(
-                        label: 'SMART',
-                        icon: Icons.bolt_outlined,
-                      ),
-                      QuickActionItem(
-                        label: 'MANUAL',
-                        icon: Icons.add_rounded,
-                        isHighlighted: true,
-                      ),
-                    ],
-                    onTap: (action) {
-                      if (action.label == 'MANUAL') {
-                        _openAddExpenseScreen(
-                          context,
-                          initialDate: _selectedDate,
-                        );
-                        return;
-                      }
-                      _showSoonMessage(context, action.label);
-                    },
-                  ),
-                  const SizedBox(height: 22),
-                  SizedBox(
-                    height: 72,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: <double>[50, 100, 200, 500, 1000].map((amount) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: _AmountChip(
-                            label: currencyFormat.format(amount),
-                            onTap: () => _openAddExpenseScreen(
-                              context,
-                              initialAmount: amount,
-                              initialDate: _selectedDate,
-                            ),
-                          ),
-                        );
-                      }).toList(growable: false),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 120),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _Header(
+            stats: stats,
+            currencyFormat: currencyFormat,
+            privacyModeEnabled: privacyModeEnabled,
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _FeatureRow(
+                  onSoonTap: (label) => _showSoonMessage(context, label),
+                ),
+                const SizedBox(height: 22),
+                QuickActionBar(
+                  actions: const <QuickActionItem>[
+                    QuickActionItem(label: 'SMS', icon: Icons.sms_outlined),
+                    QuickActionItem(
+                      label: 'VOICE',
+                      icon: Icons.mic_none_rounded,
                     ),
-                  ),
-                  const SizedBox(height: 18),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: expenseCategories.map((category) {
-                      return _CategoryTile(
-                        category: category,
-                        onTap: () => _openAddExpenseScreen(
-                          context,
-                          initialCategory: category.name,
-                          initialDate: _selectedDate,
+                    QuickActionItem(
+                      label: 'SPLIT',
+                      icon: Icons.group_outlined,
+                    ),
+                    QuickActionItem(
+                      label: 'SMART',
+                      icon: Icons.bolt_outlined,
+                    ),
+                    QuickActionItem(
+                      label: 'MANUAL',
+                      icon: Icons.add_rounded,
+                      isHighlighted: true,
+                    ),
+                  ],
+                  onTap: (action) {
+                    if (action.label == 'MANUAL') {
+                      _openAddExpenseScreen(
+                        context,
+                        initialDate: _selectedDate,
+                      );
+                      return;
+                    }
+                    _showSoonMessage(context, action.label);
+                  },
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  height: 72,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: <double>[50, 100, 200, 500, 1000].map((amount) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: _AmountChip(
+                          label: currencyFormat.format(amount),
+                          onTap: () => _openAddExpenseScreen(
+                            context,
+                            initialAmount: amount,
+                            initialDate: _selectedDate,
+                          ),
                         ),
                       );
                     }).toList(growable: false),
                   ),
-                  const SizedBox(height: 30),
-                  Row(
-                    children: <Widget>[
-                      const Text(
-                        'RECENT TRANSACTIONS',
-                        style: TextStyle(
-                          color: Color(0xFF0A6BE8),
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.4,
-                        ),
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: expenseCategories.map((category) {
+                    return _CategoryTile(
+                      category: category,
+                      onTap: () => _openAddExpenseScreen(
+                        context,
+                        initialCategory: category.name,
+                        initialDate: _selectedDate,
                       ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () => _openRecordsHistoryScreen(context),
-                        child: const Text('View All'),
+                    );
+                  }).toList(growable: false),
+                ),
+                const SizedBox(height: 30),
+                Row(
+                  children: <Widget>[
+                    const Text(
+                      'RECENT TRANSACTIONS',
+                      style: TextStyle(
+                        color: Color(0xFF0A6BE8),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.4,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _DateStripCard(
-                    visibleDates: visibleDates,
-                    selectedDate: _selectedDate,
-                    selectedTotalText: maskAmount(
-                      currencyFormat.format(selectedTotal),
-                      masked: privacyModeEnabled,
                     ),
-                    transactionCount: selectedExpenses.length,
-                    onDateSelected: (date) {
-                      setState(() {
-                        _selectedDate = date;
-                      });
-                    },
-                    onPrevious: () => _shiftWindow(-7),
-                    onNext: () => _shiftWindow(7),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => _openRecordsHistoryScreen(context),
+                      child: const Text('View All'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _DateStripCard(
+                  visibleDates: visibleDates,
+                  selectedDate: _selectedDate,
+                  selectedTotalText: maskAmount(
+                    currencyFormat.format(selectedTotal),
+                    masked: privacyModeEnabled,
                   ),
-                  const SizedBox(height: 18),
-                  if (expenseState.hasError)
-                    const _EmptyCard(
-                      title: 'Storage unavailable',
-                      message:
-                          'The expense list could not be loaded right now.',
-                    )
-                  else if (expenseState.isLoading && expenses.isEmpty)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: CircularProgressIndicator(),
-                      ),
-                    )
-                  else if (expenses.isEmpty)
-                    const _EmptyCard(
-                      title: 'No expenses yet',
-                      message:
-                          'Tap the blue add button or choose a quick amount to record your first transaction.',
-                    )
-                  else if (selectedExpenses.isEmpty)
-                    _EmptyCard(
-                      title: _emptyTitleFor(_selectedDate),
-                      message: _emptyMessageFor(_selectedDate),
-                    )
-                  else
-                    ...selectedExpenses.map((expense) {
-                      return TransactionCard(
-                        expense: expense,
-                        accountLabel: _accountLabelFor(expense, accounts),
-                        maskAmounts: privacyModeEnabled,
-                        onEdit: () => _openEditExpenseScreen(context, expense),
-                        onDelete: () => ref
-                            .read(expenseControllerProvider)
-                            .deleteExpense(expense.id),
-                      );
-                    }),
-                ],
-              ),
+                  transactionCount: selectedExpenses.length,
+                  onDateSelected: (date) {
+                    setState(() {
+                      _selectedDate = date;
+                    });
+                  },
+                  onPrevious: () => _shiftWindow(-7),
+                  onNext: () => _shiftWindow(7),
+                ),
+                const SizedBox(height: 18),
+                if (expenseState.hasError)
+                  const _EmptyCard(
+                    title: 'Storage unavailable',
+                    message: 'The expense list could not be loaded right now.',
+                  )
+                else if (expenseState.isLoading && expenses.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (expenses.isEmpty)
+                  const _EmptyCard(
+                    title: 'No expenses yet',
+                    message:
+                        'Tap the blue add button or choose a quick amount to record your first transaction.',
+                  )
+                else if (selectedExpenses.isEmpty)
+                  _EmptyCard(
+                    title: _emptyTitleFor(_selectedDate),
+                    message: _emptyMessageFor(_selectedDate),
+                  )
+                else
+                  ...selectedExpenses.map((expense) {
+                    return TransactionCard(
+                      expense: expense,
+                      accountLabel: _accountLabelFor(expense, accounts),
+                      maskAmounts: privacyModeEnabled,
+                      onEdit: () => _openEditExpenseScreen(context, expense),
+                      onDelete: () => ref
+                          .read(expenseControllerProvider)
+                          .deleteExpense(expense.id),
+                    );
+                  }),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -347,8 +344,9 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
     return Container(
-      padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
+      padding: EdgeInsets.fromLTRB(22, topPadding + 14, 22, 28),
       decoration: const BoxDecoration(
         color: Color(0xFF0A6BE8),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(44)),
@@ -357,14 +355,17 @@ class _Header extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              const Icon(
-                Icons.grid_view_rounded,
-                color: Colors.white,
-                size: 24,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  'assets/icon/xpensa_logo.png',
+                  width: 32,
+                  height: 32,
+                ),
               ),
               const SizedBox(width: 14),
               Text(
-                'Pensa',
+                'XPensa',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: Colors.white,
                       fontStyle: FontStyle.italic,
@@ -377,10 +378,10 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(height: 30),
           Text(
-            '[ All Accounts - ${maskAmount(currencyFormat.format(stats.monthTotal), masked: privacyModeEnabled)} ]',
+            'All Accounts - ${maskAmount(currencyFormat.format(stats.monthTotal), masked: privacyModeEnabled)}',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 25,
               fontWeight: FontWeight.w900,
             ),
           ),
