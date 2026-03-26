@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasource/recurring_subscription_local_datasource.dart';
@@ -78,7 +80,12 @@ class RecurringSubscriptionListNotifier
       }
 
       return seeded;
-    } catch (_) {
+    } catch (e, stackTrace) {
+      log(
+        'Error building recurring subscription list',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return defaultSubscriptions
           .map(
             (seed) => RecurringSubscriptionModel.create(

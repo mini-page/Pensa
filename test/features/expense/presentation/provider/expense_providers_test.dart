@@ -22,6 +22,10 @@ void main() {
       () {
         final now = DateTime.now().toUtc();
         final today = DateTime(now.year, now.month, now.day, 12).toUtc();
+    test('should correctly calculate totals for a non-empty list of expenses',
+        () {
+      final now = DateTime.now().toUtc();
+      final today = DateTime(now.year, now.month, now.day, 12).toUtc();
 
         final expenses = [
           ExpenseModel.create(

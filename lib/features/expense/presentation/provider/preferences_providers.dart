@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -61,7 +63,8 @@ class AppPreferencesNotifier extends AsyncNotifier<AppPreferencesModel> {
   Future<AppPreferencesModel> build() async {
     try {
       return await _repository.getPreferences();
-    } catch (_) {
+    } catch (e, stackTrace) {
+      log('Error building app preferences', error: e, stackTrace: stackTrace);
       return AppPreferencesModel.defaults;
     }
   }
