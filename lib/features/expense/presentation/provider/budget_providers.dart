@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,6 +47,12 @@ class BudgetTargetsNotifier extends AsyncNotifier<Map<String, double>> {
       }
       return merged;
     } catch (e, stackTrace) {
+      dev.log(
+        'Failed to fetch or merge budgets',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'BudgetTargetsNotifier',
+      );
       log('Error building budget targets', error: e, stackTrace: stackTrace);
       return <String, double>{...defaultBudgetTargets};
     }

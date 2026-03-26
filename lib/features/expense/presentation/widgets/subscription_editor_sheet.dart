@@ -77,8 +77,9 @@ class _SubscriptionEditorSheetState extends State<_SubscriptionEditorSheet> {
     _amountController = TextEditingController(
       text: widget.subscription?.amount.toStringAsFixed(0) ?? '',
     );
-    _noteController =
-        TextEditingController(text: widget.subscription?.note ?? '');
+    _noteController = TextEditingController(
+      text: widget.subscription?.note ?? '',
+    );
     _nextBillDate = widget.subscription?.nextBillDate ?? DateTime.now();
     _iconKey =
         widget.subscription?.iconKey ?? subscriptionIconOptions.first.key;

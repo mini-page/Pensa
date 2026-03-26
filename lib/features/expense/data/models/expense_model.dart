@@ -131,6 +131,10 @@ class ExpenseModelAdapter extends TypeAdapter<ExpenseModel> {
       accountId = storedAccountId.isEmpty ? null : storedAccountId;
     } catch (e, stackTrace) {
       dev.log(
+        'Failed to parse accountId from storage',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'ExpenseModelAdapter',
         'Error reading accountId from hive',
         error: e,
         stackTrace: stackTrace,
@@ -143,6 +147,10 @@ class ExpenseModelAdapter extends TypeAdapter<ExpenseModel> {
       type = TransactionTypeCodec.fromStorageValue(reader.readString());
     } catch (e, stackTrace) {
       dev.log(
+        'Failed to parse TransactionType from storage',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'ExpenseModelAdapter',
         'Error reading TransactionType from hive',
         error: e,
         stackTrace: stackTrace,

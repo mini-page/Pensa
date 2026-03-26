@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,6 +42,12 @@ class ExpenseListNotifier extends AsyncNotifier<List<ExpenseModel>> {
     try {
       return _repository.getAllExpenses();
     } catch (e, stackTrace) {
+      dev.log(
+        'Failed to fetch all expenses',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'ExpenseListNotifier',
+      );
       log('Error getting all expenses', error: e, stackTrace: stackTrace);
       return <ExpenseModel>[];
     }
@@ -174,6 +181,12 @@ class ExpenseController {
     try {
       return await _accountRepository.getAllAccounts();
     } catch (e, stackTrace) {
+      dev.log(
+        'Failed to load accounts for balance adjustments',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'ExpenseController',
+      );
       log('Error loading accounts', error: e, stackTrace: stackTrace);
       return <AccountModel>[];
     }
@@ -181,8 +194,9 @@ class ExpenseController {
 
   Future<ExpenseModel?> _findExpenseById(String id) async {
     final currentExpenses = _ref.read(expenseListProvider).valueOrNull;
-    final loadedExpense =
-        currentExpenses?.where((expense) => expense.id == id).firstOrNull;
+    final loadedExpense = currentExpenses
+        ?.where((expense) => expense.id == id)
+        .firstOrNull;
     if (loadedExpense != null) {
       return loadedExpense;
     }
@@ -197,7 +211,13 @@ class ExpenseController {
     } catch (e, stackTrace) {
       log('Error finding expense by id', error: e, stackTrace: stackTrace);
       return await _expenseRepository.getExpenseById(id);
-    } catch (_) {
+    } catch (e, stackTrace) {
+      dev.log(
+        'Failed to find expense by id',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'ExpenseController',
+      );
       return null;
     }
   }

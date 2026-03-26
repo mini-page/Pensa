@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,6 +82,11 @@ class RecurringSubscriptionListNotifier
 
       return seeded;
     } catch (e, stackTrace) {
+      dev.log(
+        'Failed to fetch or seed subscriptions',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'RecurringSubscriptionListNotifier',
       log(
         'Error building recurring subscription list',
         error: e,

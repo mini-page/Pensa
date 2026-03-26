@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -64,6 +65,12 @@ class AppPreferencesNotifier extends AsyncNotifier<AppPreferencesModel> {
     try {
       return await _repository.getPreferences();
     } catch (e, stackTrace) {
+      dev.log(
+        'Failed to fetch preferences',
+        error: e,
+        stackTrace: stackTrace,
+        name: 'AppPreferencesNotifier',
+      );
       log('Error building app preferences', error: e, stackTrace: stackTrace);
       return AppPreferencesModel.defaults;
     }

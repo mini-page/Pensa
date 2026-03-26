@@ -42,7 +42,10 @@ class RecurringSubscriptionModel {
     }
     if (amount <= 0) {
       throw ArgumentError.value(
-          amount, 'amount', 'Subscription amount must be positive.');
+        amount,
+        'amount',
+        'Subscription amount must be positive.',
+      );
     }
   }
 
