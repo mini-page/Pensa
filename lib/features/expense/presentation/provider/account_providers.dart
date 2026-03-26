@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasource/account_local_datasource.dart';
@@ -63,12 +65,12 @@ class AccountListNotifier extends AsyncNotifier<List<AccountModel>> {
           })
           .toList(growable: false);
 
-      for (final account in seededAccounts) {
-        await _repository.saveAccount(account);
-      }
+      await _repository.saveAccounts(seededAccounts);
 
       return seededAccounts;
     } catch (_) {
+    } catch (e, stackTrace) {
+      log('Error initializing accounts', error: e, stackTrace: stackTrace);
       return defaultAccounts
           .map((seed) {
             return AccountModel.create(

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/datasource/budget_local_datasource.dart';
@@ -43,7 +45,8 @@ class BudgetTargetsNotifier extends AsyncNotifier<Map<String, double>> {
         merged[budget.category] = budget.monthlyLimit;
       }
       return merged;
-    } catch (_) {
+    } catch (e, stackTrace) {
+      log('Error building budget targets', error: e, stackTrace: stackTrace);
       return <String, double>{...defaultBudgetTargets};
     }
   }
