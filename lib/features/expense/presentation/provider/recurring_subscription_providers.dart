@@ -1,4 +1,5 @@
 import 'dart:developer' as dev;
+import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -86,6 +87,10 @@ class RecurringSubscriptionListNotifier
         error: e,
         stackTrace: stackTrace,
         name: 'RecurringSubscriptionListNotifier',
+      log(
+        'Error building recurring subscription list',
+        error: e,
+        stackTrace: stackTrace,
       );
       return defaultSubscriptions
           .map(

@@ -1,4 +1,5 @@
 import 'dart:developer' as dev;
+import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -75,6 +76,9 @@ class AccountListNotifier extends AsyncNotifier<List<AccountModel>> {
         stackTrace: stackTrace,
         name: 'AccountListNotifier',
       );
+    } catch (_) {
+    } catch (e, stackTrace) {
+      log('Error initializing accounts', error: e, stackTrace: stackTrace);
       return defaultAccounts
           .map((seed) {
             return AccountModel.create(

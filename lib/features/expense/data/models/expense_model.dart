@@ -1,4 +1,5 @@
 import 'dart:developer' as dev;
+import 'dart:math';
 
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
@@ -134,6 +135,9 @@ class ExpenseModelAdapter extends TypeAdapter<ExpenseModel> {
         error: e,
         stackTrace: stackTrace,
         name: 'ExpenseModelAdapter',
+        'Error reading accountId from hive',
+        error: e,
+        stackTrace: stackTrace,
       );
       accountId = null;
     }
@@ -147,6 +151,9 @@ class ExpenseModelAdapter extends TypeAdapter<ExpenseModel> {
         error: e,
         stackTrace: stackTrace,
         name: 'ExpenseModelAdapter',
+        'Error reading TransactionType from hive',
+        error: e,
+        stackTrace: stackTrace,
       );
       type = TransactionType.expense;
     }

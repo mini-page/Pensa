@@ -1,4 +1,5 @@
 import 'dart:developer' as dev;
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,6 +71,7 @@ class AppPreferencesNotifier extends AsyncNotifier<AppPreferencesModel> {
         stackTrace: stackTrace,
         name: 'AppPreferencesNotifier',
       );
+      log('Error building app preferences', error: e, stackTrace: stackTrace);
       return AppPreferencesModel.defaults;
     }
   }

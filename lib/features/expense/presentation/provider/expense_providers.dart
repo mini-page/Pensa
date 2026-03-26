@@ -1,4 +1,5 @@
 import 'dart:developer' as dev;
+import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -47,6 +48,7 @@ class ExpenseListNotifier extends AsyncNotifier<List<ExpenseModel>> {
         stackTrace: stackTrace,
         name: 'ExpenseListNotifier',
       );
+      log('Error getting all expenses', error: e, stackTrace: stackTrace);
       return <ExpenseModel>[];
     }
   }
@@ -185,6 +187,7 @@ class ExpenseController {
         stackTrace: stackTrace,
         name: 'ExpenseController',
       );
+      log('Error loading accounts', error: e, stackTrace: stackTrace);
       return <AccountModel>[];
     }
   }
@@ -199,6 +202,14 @@ class ExpenseController {
     }
 
     try {
+      final expenses = await _expenseRepository.getAllExpenses();
+      for (final expense in expenses) {
+        if (expense.id == id) {
+          return expense;
+        }
+      }
+    } catch (e, stackTrace) {
+      log('Error finding expense by id', error: e, stackTrace: stackTrace);
       return await _expenseRepository.getExpenseById(id);
     } catch (e, stackTrace) {
       dev.log(
