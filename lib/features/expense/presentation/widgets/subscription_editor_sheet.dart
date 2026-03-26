@@ -66,6 +66,12 @@ class _SubscriptionEditorSheetState extends State<_SubscriptionEditorSheet> {
     _noteController = TextEditingController(
       text: widget.subscription?.note ?? '',
     );
+    _amountController = TextEditingController(
+      text: widget.subscription?.amount.toStringAsFixed(0) ?? '',
+    );
+    _noteController = TextEditingController(
+      text: widget.subscription?.note ?? '',
+    );
     _nameController =
         TextEditingController(text: widget.subscription?.name ?? '');
     _amountController = TextEditingController(

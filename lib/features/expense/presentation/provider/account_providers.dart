@@ -68,6 +68,7 @@ class AccountListNotifier extends AsyncNotifier<List<AccountModel>> {
       await _repository.saveAccounts(seededAccounts);
 
       return seededAccounts;
+    } catch (_) {
     } catch (e, stackTrace) {
       log('Error initializing accounts', error: e, stackTrace: stackTrace);
       return defaultAccounts
