@@ -1,5 +1,4 @@
 import 'dart:developer' as dev;
-import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,7 +29,7 @@ final expenseControllerProvider = Provider<ExpenseController>((ref) {
 
 final statsProvider = Provider<ExpenseStats>((ref) {
   final expenses =
-      ref.watch(expenseListProvider).valueOrNull ?? const <ExpenseModel>[];
+      ref.watch(expenseListProvider).value ?? const <ExpenseModel>[];
   return ExpenseStats.fromExpenses(expenses);
 });
 
@@ -48,7 +47,6 @@ class ExpenseListNotifier extends AsyncNotifier<List<ExpenseModel>> {
         stackTrace: stackTrace,
         name: 'ExpenseListNotifier',
       );
-      log('Error getting all expenses', error: e, stackTrace: stackTrace);
       return <ExpenseModel>[];
     }
   }
@@ -175,7 +173,7 @@ class ExpenseController {
   }
 
   Future<List<AccountModel>> _loadAccounts() async {
-    final currentAccounts = _ref.read(accountListProvider).valueOrNull;
+    final currentAccounts = _ref.read(accountListProvider).value;
     if (currentAccounts != null) {
       return currentAccounts;
     }
@@ -189,13 +187,12 @@ class ExpenseController {
         stackTrace: stackTrace,
         name: 'ExpenseController',
       );
-      log('Error loading accounts', error: e, stackTrace: stackTrace);
       return <AccountModel>[];
     }
   }
 
   Future<ExpenseModel?> _findExpenseById(String id) async {
-    final currentExpenses = _ref.read(expenseListProvider).valueOrNull;
+    final currentExpenses = _ref.read(expenseListProvider).value;
     final loadedExpense = currentExpenses
         ?.where((expense) => expense.id == id)
         .firstOrNull;
@@ -210,18 +207,19 @@ class ExpenseController {
           return expense;
         }
       }
-    } catch (e, stackTrace) {
-      log('Error finding expense by id', error: e, stackTrace: stackTrace);
-      return await _expenseRepository.getExpenseById(id);
-    } catch (e, stackTrace) {
+    } catch (e) {
+      try {
+        return await _expenseRepository.getExpenseById(id);
+      } catch (e) {
       dev.log(
         'Failed to find expense by id',
         error: e,
-        stackTrace: stackTrace,
         name: 'ExpenseController',
       );
       return null;
     }
+    }
+    return null;
   }
 
   void _refreshState() {

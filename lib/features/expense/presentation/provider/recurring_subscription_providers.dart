@@ -1,5 +1,4 @@
 import 'dart:developer' as dev;
-import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -87,10 +86,6 @@ class RecurringSubscriptionListNotifier
         error: e,
         stackTrace: stackTrace,
         name: 'RecurringSubscriptionListNotifier',
-      log(
-        'Error building recurring subscription list',
-        error: e,
-        stackTrace: stackTrace,
       );
       return defaultSubscriptions
           .map(
@@ -107,7 +102,7 @@ class RecurringSubscriptionListNotifier
 
   Future<void> saveSubscription(RecurringSubscriptionModel subscription) async {
     final currentSubscriptions =
-        state.valueOrNull ?? const <RecurringSubscriptionModel>[];
+        state.value ?? const <RecurringSubscriptionModel>[];
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await _repository.saveSubscription(subscription);
@@ -122,7 +117,7 @@ class RecurringSubscriptionListNotifier
 
   Future<void> deleteSubscription(String id) async {
     final currentSubscriptions =
-        state.valueOrNull ?? const <RecurringSubscriptionModel>[];
+        state.value ?? const <RecurringSubscriptionModel>[];
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await _repository.deleteSubscription(id);

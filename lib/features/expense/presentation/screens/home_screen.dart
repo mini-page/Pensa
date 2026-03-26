@@ -37,9 +37,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final expenseState = ref.watch(expenseListProvider);
-    final expenses = expenseState.valueOrNull ?? const <ExpenseModel>[];
+    final expenses = expenseState.value ?? const <ExpenseModel>[];
     final accounts =
-        ref.watch(accountListProvider).valueOrNull ?? const <AccountModel>[];
+        ref.watch(accountListProvider).value ?? const <AccountModel>[];
     final stats = ref.watch(statsProvider);
     final privacyModeEnabled = ref.watch(privacyModeEnabledProvider);
     final currencyFormat = NumberFormat.currency(

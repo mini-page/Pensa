@@ -1,5 +1,4 @@
 import 'dart:developer' as dev;
-import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -53,7 +52,6 @@ class BudgetTargetsNotifier extends AsyncNotifier<Map<String, double>> {
         stackTrace: stackTrace,
         name: 'BudgetTargetsNotifier',
       );
-      log('Error building budget targets', error: e, stackTrace: stackTrace);
       return <String, double>{...defaultBudgetTargets};
     }
   }
@@ -63,7 +61,7 @@ class BudgetTargetsNotifier extends AsyncNotifier<Map<String, double>> {
     required double monthlyLimit,
   }) async {
     final currentBudgets =
-        state.valueOrNull ?? <String, double>{...defaultBudgetTargets};
+        state.value ?? <String, double>{...defaultBudgetTargets};
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await _repository.saveBudget(

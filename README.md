@@ -38,11 +38,7 @@ XPensa is a modern, personal expense tracker designed for a simple, focused, and
 
 Enjoy tracking your expenses on any device! XPensa supports:
 
-| Mobile | Desktop | Web |
-| :---: | :---: | :---: |
-| ✅ Android | ✅ Windows | ✅ Web Browser |
-| ✅ iOS | ✅ macOS | |
-| | ✅ Linux | |
+✅ Android
 
 ---
 

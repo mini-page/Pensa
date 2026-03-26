@@ -22,27 +22,23 @@ void main() {
       () {
         final now = DateTime.now().toUtc();
         final today = DateTime(now.year, now.month, now.day, 12).toUtc();
-    test('should correctly calculate totals for a non-empty list of expenses',
-        () {
-      final now = DateTime.now().toUtc();
-      final today = DateTime(now.year, now.month, now.day, 12).toUtc();
 
         final expenses = [
           ExpenseModel.create(
             amount: 100.0,
-            category: 'Food',
+            category: 'Food & Dining',
             date: today,
             type: TransactionType.expense,
           ),
           ExpenseModel.create(
             amount: 50.0,
-            category: 'Food',
+            category: 'Food & Dining',
             date: today,
             type: TransactionType.expense,
           ),
           ExpenseModel.create(
             amount: 200.0,
-            category: 'Transport',
+            category: 'Transportation',
             date: today,
             type: TransactionType.expense,
           ),
@@ -62,7 +58,7 @@ void main() {
         expect(stats.todayTotal, 350.0);
         expect(stats.todayIncomeTotal, 1000.0);
         expect(stats.transactionCount, 4);
-        expect(stats.categoryTotals, {'Transport': 200.0, 'Food': 150.0});
+        expect(stats.categoryTotals, {'Transportation': 200.0, 'Food & Dining': 150.0});
         expect(stats.incomeCategoryTotals, {'Salary': 1000.0});
       },
     );

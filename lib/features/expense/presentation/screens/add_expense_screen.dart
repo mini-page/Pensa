@@ -82,7 +82,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   @override
   Widget build(BuildContext context) {
     final accountState = ref.watch(accountListProvider);
-    final accounts = accountState.valueOrNull ?? const <AccountModel>[];
+    final accounts = accountState.value ?? const <AccountModel>[];
     if (!_hasExplicitAccountChoice && accounts.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted || _hasExplicitAccountChoice) {
@@ -550,7 +550,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   Future<void> _saveExpense() async {
     final amount = double.tryParse(_amountText) ?? 0;
     final accounts =
-        ref.read(accountListProvider).valueOrNull ?? const <AccountModel>[];
+        ref.read(accountListProvider).value ?? const <AccountModel>[];
     final effectiveAccountId = _resolveSelectedAccount(accounts)?.id;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(

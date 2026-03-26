@@ -1,5 +1,4 @@
 import 'dart:developer' as dev;
-import 'dart:developer';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -34,7 +33,7 @@ final accountControllerProvider = Provider<AccountController>((ref) {
 
 final accountSummaryProvider = Provider<AccountSummary>((ref) {
   final accounts =
-      ref.watch(accountListProvider).valueOrNull ?? const <AccountModel>[];
+      ref.watch(accountListProvider).value ?? const <AccountModel>[];
   final totalBalance = accounts.fold<double>(
     0,
     (sum, account) => sum + account.balance,
@@ -76,9 +75,6 @@ class AccountListNotifier extends AsyncNotifier<List<AccountModel>> {
         stackTrace: stackTrace,
         name: 'AccountListNotifier',
       );
-    } catch (_) {
-    } catch (e, stackTrace) {
-      log('Error initializing accounts', error: e, stackTrace: stackTrace);
       return defaultAccounts
           .map((seed) {
             return AccountModel.create(
@@ -92,7 +88,7 @@ class AccountListNotifier extends AsyncNotifier<List<AccountModel>> {
   }
 
   Future<void> saveAccount(AccountModel account) async {
-    final currentAccounts = state.valueOrNull ?? const <AccountModel>[];
+    final currentAccounts = state.value ?? const <AccountModel>[];
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await _repository.saveAccount(account);
@@ -106,7 +102,7 @@ class AccountListNotifier extends AsyncNotifier<List<AccountModel>> {
   }
 
   Future<void> deleteAccount(String id) async {
-    final currentAccounts = state.valueOrNull ?? const <AccountModel>[];
+    final currentAccounts = state.value ?? const <AccountModel>[];
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       await _repository.deleteAccount(id);

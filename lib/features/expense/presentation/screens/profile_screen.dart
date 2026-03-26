@@ -8,7 +8,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final preferences = ref.watch(appPreferencesProvider).valueOrNull;
+    final preferences = ref.watch(appPreferencesProvider).value;
     final controller = ref.read(appPreferencesControllerProvider);
     final smartReminders = ref.watch(smartRemindersEnabledProvider);
     final privacyMode = ref.watch(privacyModeEnabledProvider);

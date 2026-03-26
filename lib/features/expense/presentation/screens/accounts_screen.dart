@@ -26,7 +26,7 @@ class AccountsScreen extends ConsumerWidget {
     final accountState = ref.watch(accountListProvider);
     final summary = ref.watch(accountSummaryProvider);
     final privacyModeEnabled = ref.watch(privacyModeEnabledProvider);
-    final accounts = accountState.valueOrNull ?? const <AccountModel>[];
+    final accounts = accountState.value ?? const <AccountModel>[];
 
     return SafeArea(
       child: Padding(

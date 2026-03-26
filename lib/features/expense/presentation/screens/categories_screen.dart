@@ -36,9 +36,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       symbol: '₹',
       decimalDigits: 0,
     );
-    final budgets = budgetState.valueOrNull ?? defaultBudgetTargets;
+    final budgets = budgetState.value ?? defaultBudgetTargets;
     final subscriptions =
-        subscriptionState.valueOrNull ?? const <RecurringSubscriptionModel>[];
+        subscriptionState.value ?? const <RecurringSubscriptionModel>[];
     final categoryCards = _showIncome
         ? incomeCategories
               .map(

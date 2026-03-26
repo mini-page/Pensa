@@ -33,8 +33,8 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
     final expenseState = ref.watch(expenseListProvider);
     final accountState = ref.watch(accountListProvider);
     final privacyModeEnabled = ref.watch(privacyModeEnabledProvider);
-    final expenses = expenseState.valueOrNull ?? const <ExpenseModel>[];
-    final accounts = accountState.valueOrNull ?? const <AccountModel>[];
+    final expenses = expenseState.value ?? const <ExpenseModel>[];
+    final accounts = accountState.value ?? const <AccountModel>[];
     final filteredExpenses = _filterExpenses(expenses);
     final groupedExpenses = _groupExpenses(filteredExpenses);
     final currency = NumberFormat.currency(

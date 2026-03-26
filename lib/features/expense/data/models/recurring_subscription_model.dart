@@ -32,21 +32,6 @@ class RecurringSubscriptionModel {
         'Subscription amount must be positive.',
       );
     }
-    if (amount <= 0) {
-      throw ArgumentError.value(
-        amount,
-        'amount',
-        'Subscription amount must be positive.',
-      );
-          name, 'name', 'Subscription name cannot be empty.');
-    }
-    if (amount <= 0) {
-      throw ArgumentError.value(
-        amount,
-        'amount',
-        'Subscription amount must be positive.',
-      );
-    }
   }
 
   factory RecurringSubscriptionModel.create({

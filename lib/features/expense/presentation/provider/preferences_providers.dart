@@ -1,5 +1,4 @@
 import 'dart:developer' as dev;
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,18 +32,18 @@ final appPreferencesControllerProvider = Provider<AppPreferencesController>((
 });
 
 final privacyModeEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(appPreferencesProvider).valueOrNull?.privacyModeEnabled ??
+  return ref.watch(appPreferencesProvider).value?.privacyModeEnabled ??
       AppPreferencesModel.defaults.privacyModeEnabled;
 });
 
 final smartRemindersEnabledProvider = Provider<bool>((ref) {
-  return ref.watch(appPreferencesProvider).valueOrNull?.smartRemindersEnabled ??
+  return ref.watch(appPreferencesProvider).value?.smartRemindersEnabled ??
       AppPreferencesModel.defaults.smartRemindersEnabled;
 });
 
 final appThemeModeProvider = Provider<ThemeMode>((ref) {
   final key =
-      ref.watch(appPreferencesProvider).valueOrNull?.themeModeKey ??
+      ref.watch(appPreferencesProvider).value?.themeModeKey ??
       AppPreferencesModel.defaults.themeModeKey;
   switch (key) {
     case 'dark':
@@ -71,7 +70,6 @@ class AppPreferencesNotifier extends AsyncNotifier<AppPreferencesModel> {
         stackTrace: stackTrace,
         name: 'AppPreferencesNotifier',
       );
-      log('Error building app preferences', error: e, stackTrace: stackTrace);
       return AppPreferencesModel.defaults;
     }
   }
@@ -91,7 +89,7 @@ class AppPreferencesController {
   final Ref _ref;
 
   AppPreferencesModel get _current =>
-      _ref.read(appPreferencesProvider).valueOrNull ??
+      _ref.read(appPreferencesProvider).value ??
       AppPreferencesModel.defaults;
 
   Future<void> setThemeMode(String themeModeKey) async {
