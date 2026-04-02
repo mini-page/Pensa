@@ -240,35 +240,41 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Widget _buildThemeOption(String label, String key, IconData icon) {
     final isSelected = _selectedThemeKey == key;
     return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _selectedThemeKey = key),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? AppColors.primaryBlue.withOpacity(0.1) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? AppColors.primaryBlue : AppColors.backgroundLight,
-              width: 2,
+      child: Semantics(
+        button: true,
+        label: 'Select $label theme',
+        selected: isSelected,
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: () => setState(() => _selectedThemeKey = key),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.primaryBlue.withValues(alpha: 0.1) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? AppColors.primaryBlue : AppColors.backgroundLight,
+                width: 2,
+              ),
             ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: isSelected ? AppColors.primaryBlue : AppColors.textSubtle,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
+            child: Column(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
                   color: isSelected ? AppColors.primaryBlue : AppColors.textSubtle,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isSelected ? AppColors.primaryBlue : AppColors.textSubtle,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
