@@ -5,8 +5,12 @@ import '../models/recurring_subscription_model.dart';
 class RecurringSubscriptionLocalDatasource {
   static const String boxName = 'subscriptions';
 
+  final Box<RecurringSubscriptionModel>? _injectedBox;
+
+  RecurringSubscriptionLocalDatasource([this._injectedBox]);
+
   Box<RecurringSubscriptionModel> get _box =>
-      Hive.box<RecurringSubscriptionModel>(boxName);
+      _injectedBox ?? Hive.box<RecurringSubscriptionModel>(boxName);
 
   Future<List<RecurringSubscriptionModel>> getAllSubscriptions() async {
     final subscriptions = _box.values.toList(growable: false)
