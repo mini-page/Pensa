@@ -26,8 +26,8 @@ final budgetRepositoryProvider = Provider<BudgetRepository>((ref) {
 
 final budgetTargetsProvider =
     AsyncNotifierProvider<BudgetTargetsNotifier, Map<String, double>>(
-      BudgetTargetsNotifier.new,
-    );
+  BudgetTargetsNotifier.new,
+);
 
 final budgetControllerProvider = Provider<BudgetController>((ref) {
   return BudgetController(ref);

@@ -8,16 +8,19 @@ import '../provider/account_providers.dart';
 import '../provider/expense_providers.dart';
 import '../provider/preferences_providers.dart';
 import '../widgets/transaction_card.dart';
+import '../widgets/ui_feedback.dart';
 import 'add_expense_screen.dart';
 
 class TransactionSearchScreen extends ConsumerStatefulWidget {
   const TransactionSearchScreen({super.key});
 
   @override
-  ConsumerState<TransactionSearchScreen> createState() => _TransactionSearchScreenState();
+  ConsumerState<TransactionSearchScreen> createState() =>
+      _TransactionSearchScreenState();
 }
 
-class _TransactionSearchScreenState extends ConsumerState<TransactionSearchScreen> {
+class _TransactionSearchScreenState
+    extends ConsumerState<TransactionSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -29,7 +32,8 @@ class _TransactionSearchScreenState extends ConsumerState<TransactionSearchScree
   @override
   Widget build(BuildContext context) {
     final filteredExpenses = ref.watch(filteredExpensesProvider);
-    final accounts = ref.watch(accountListProvider).value ?? const <AccountModel>[];
+    final accounts =
+        ref.watch(accountListProvider).value ?? const <AccountModel>[];
     final privacyModeEnabled = ref.watch(privacyModeEnabledProvider);
 
     return Scaffold(
@@ -73,9 +77,7 @@ class _TransactionSearchScreenState extends ConsumerState<TransactionSearchScree
                   accountLabel: _accountLabelFor(expense, accounts),
                   maskAmounts: privacyModeEnabled,
                   onEdit: () => _openEditExpenseScreen(context, expense),
-                  onDelete: () => ref
-                      .read(expenseControllerProvider)
-                      .deleteExpense(expense.id),
+                  onDelete: () => _confirmDeleteExpense(expense),
                 );
               },
             ),
@@ -91,7 +93,7 @@ class _TransactionSearchScreenState extends ConsumerState<TransactionSearchScree
           Icon(
             query.isEmpty ? Icons.search_rounded : Icons.search_off_rounded,
             size: 64,
-            color: AppColors.textMuted.withOpacity(0.5),
+            color: AppColors.textMuted.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -115,7 +117,8 @@ class _TransactionSearchScreenState extends ConsumerState<TransactionSearchScree
     return 'Archived Account';
   }
 
-  Future<void> _openEditExpenseScreen(BuildContext context, ExpenseModel expense) {
+  Future<void> _openEditExpenseScreen(
+      BuildContext context, ExpenseModel expense) {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => AddExpenseScreen(
@@ -129,5 +132,28 @@ class _TransactionSearchScreenState extends ConsumerState<TransactionSearchScree
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDeleteExpense(ExpenseModel expense) async {
+    final label = expense.note.isEmpty ? expense.category : expense.note;
+    final confirmed = await confirmDestructiveAction(
+      context,
+      title: 'Delete transaction?',
+      message: 'Remove "$label" from your search results and records?',
+      confirmLabel: 'Delete txn',
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    await ref.read(expenseControllerProvider).deleteExpense(expense.id);
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Transaction removed.')));
   }
 }

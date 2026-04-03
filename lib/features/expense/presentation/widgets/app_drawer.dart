@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../provider/preferences_providers.dart';
+import 'ui_feedback.dart';
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
@@ -44,29 +46,57 @@ class AppDrawer extends ConsumerWidget {
                   value: smartReminders,
                   onChanged: controller.setSmartReminders,
                 ),
-
                 const Divider(height: 32, indent: 20, endIndent: 20),
-
                 const _SectionHeader(title: 'Utility'),
                 _buildDrawerTile(
                   icon: Icons.info_outline_rounded,
                   title: 'About XPensa',
                   onTap: () {
-                    // Show about dialog or navigate
+                    Navigator.of(context).pop();
+                    showAboutDialog(
+                      context: context,
+                      applicationName: 'XPensa',
+                      applicationVersion: '1.0.0',
+                      applicationLegalese: 'Offline-first expense tracking',
+                      children: const <Widget>[
+                        Padding(
+                          padding: EdgeInsets.only(top: AppSpacing.sm),
+                          child: Text(
+                            'XPensa focuses on quick manual tracking first, then expands into smarter utilities.',
+                          ),
+                        ),
+                      ],
+                    );
                   },
                 ),
                 _buildDrawerTile(
                   icon: Icons.help_outline_rounded,
-                  title: 'Support',
-                  onTap: () {
-                    // Handle support
+                  title: 'Help & Feedback',
+                  subtitle: 'Coming after the core tracker is stable',
+                  trailing: const _SoonChip(),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await showPlannedFeatureNotice(
+                      context,
+                      title: 'Help & feedback is planned',
+                      message:
+                          'Support links will appear once the core expense flows and settings settle.',
+                    );
                   },
                 ),
                 _buildDrawerTile(
                   icon: Icons.more_horiz_rounded,
-                  title: 'Miscellaneous',
-                  onTap: () {
-                    // Handle misc
+                  title: 'More Tools',
+                  subtitle: 'Reserved for future utilities',
+                  trailing: const _SoonChip(),
+                  onTap: () async {
+                    Navigator.of(context).pop();
+                    await showPlannedFeatureNotice(
+                      context,
+                      title: 'More tools are planned',
+                      message:
+                          'This space is reserved for future utilities instead of linking to vague placeholders today.',
+                    );
                   },
                 ),
               ],
@@ -227,10 +257,12 @@ class AppDrawer extends ConsumerWidget {
           }
         },
         items: [
-          const DropdownMenuItem(value: '\u20B9', child: Text('Rupee (\u20B9)')),
+          const DropdownMenuItem(
+              value: '\u20B9', child: Text('Rupee (\u20B9)')),
           const DropdownMenuItem(value: '\$', child: Text('Dollar (\$)')),
           const DropdownMenuItem(value: '\u20AC', child: Text('Euro (\u20AC)')),
-          const DropdownMenuItem(value: '\u00A3', child: Text('Pound (\u00A3)')),
+          const DropdownMenuItem(
+              value: '\u00A3', child: Text('Pound (\u00A3)')),
         ],
       ),
     );
@@ -267,6 +299,8 @@ class AppDrawer extends ConsumerWidget {
   Widget _buildDrawerTile({
     required IconData icon,
     required String title,
+    String? subtitle,
+    Widget? trailing,
     void Function()? onTap,
   }) {
     return ListTile(
@@ -278,6 +312,17 @@ class AppDrawer extends ConsumerWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+      trailing: trailing,
       onTap: onTap,
     );
   }
@@ -317,6 +362,32 @@ class _TileIcon extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(icon, color: AppColors.primaryBlue, size: 20),
+    );
+  }
+}
+
+class _SoonChip extends StatelessWidget {
+  const _SoonChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceAccent,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+      ),
+      child: const Text(
+        'Soon',
+        style: TextStyle(
+          color: AppColors.primaryBlue,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
     );
   }
 }

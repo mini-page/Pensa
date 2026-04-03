@@ -22,8 +22,8 @@ final preferencesRepositoryProvider = Provider<PreferencesRepository>((ref) {
 
 final appPreferencesProvider =
     AsyncNotifierProvider<AppPreferencesNotifier, AppPreferencesModel>(
-      AppPreferencesNotifier.new,
-    );
+  AppPreferencesNotifier.new,
+);
 
 final appPreferencesControllerProvider = Provider<AppPreferencesController>((
   ref,
@@ -57,8 +57,7 @@ final smartRemindersEnabledProvider = Provider<bool>((ref) {
 });
 
 final appThemeModeProvider = Provider<ThemeMode>((ref) {
-  final key =
-      ref.watch(appPreferencesProvider).value?.themeModeKey ??
+  final key = ref.watch(appPreferencesProvider).value?.themeModeKey ??
       AppPreferencesModel.defaults.themeModeKey;
   switch (key) {
     case 'dark':
@@ -104,8 +103,7 @@ class AppPreferencesController {
   final Ref _ref;
 
   AppPreferencesModel get _current =>
-      _ref.read(appPreferencesProvider).value ??
-      AppPreferencesModel.defaults;
+      _ref.read(appPreferencesProvider).value ?? AppPreferencesModel.defaults;
 
   Future<void> setThemeMode(String themeModeKey) async {
     await _ref
@@ -151,13 +149,13 @@ class AppPreferencesController {
     required bool isOnboardingCompleted,
   }) async {
     await _ref.read(appPreferencesProvider.notifier).save(
-      _current.copyWith(
-        themeModeKey: themeModeKey,
-        locale: locale,
-        currencySymbol: currencySymbol,
-        smartRemindersEnabled: smartRemindersEnabled,
-        isOnboardingCompleted: isOnboardingCompleted,
-      ),
-    );
+          _current.copyWith(
+            themeModeKey: themeModeKey,
+            locale: locale,
+            currencySymbol: currencySymbol,
+            smartRemindersEnabled: smartRemindersEnabled,
+            isOnboardingCompleted: isOnboardingCompleted,
+          ),
+        );
   }
 }

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/context_extensions.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/expense_model.dart';
 import '../provider/account_providers.dart';
@@ -13,6 +13,7 @@ import '../provider/preferences_providers.dart';
 import '../widgets/amount_visibility.dart';
 import '../widgets/quick_action_bar.dart';
 import '../widgets/transaction_card.dart';
+import '../widgets/ui_feedback.dart';
 import 'add_expense_screen.dart';
 import 'records_history_screen.dart';
 import 'transaction_search_screen.dart';
@@ -91,12 +92,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 8),
                 QuickActionBar(
                   actions: const <QuickActionItem>[
-                    QuickActionItem(label: 'SMS', icon: Icons.sms_outlined),
+                    QuickActionItem(
+                      label: 'SMS',
+                      icon: Icons.sms_outlined,
+                      isEnabled: false,
+                      badgeLabel: 'Soon',
+                    ),
                     QuickActionItem(
                       label: 'VOICE',
                       icon: Icons.mic_none_rounded,
+                      isEnabled: false,
+                      badgeLabel: 'Soon',
                     ),
-                    QuickActionItem(label: 'SMART', icon: Icons.bolt_outlined),
+                    QuickActionItem(
+                      label: 'SMART',
+                      icon: Icons.bolt_outlined,
+                      isEnabled: false,
+                      badgeLabel: 'Soon',
+                    ),
                     QuickActionItem(
                       label: 'MANUAL',
                       icon: Icons.add_rounded,
@@ -109,9 +122,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         context,
                         initialDate: _selectedDate,
                       );
-                      return;
                     }
-                    _showSoonMessage(context, action.label);
                   },
                 ),
                 const SizedBox(height: 22),
@@ -202,9 +213,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       accountLabel: _accountLabelFor(expense, accounts),
                       maskAmounts: privacyModeEnabled,
                       onEdit: () => _openEditExpenseScreen(context, expense),
-                      onDelete: () => ref
-                          .read(expenseControllerProvider)
-                          .deleteExpense(expense.id),
+                      onDelete: () => _confirmDeleteExpense(expense),
                     );
                   }),
               ],
@@ -254,12 +263,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _openRecordsHistoryScreen(BuildContext context) {
     return Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const RecordsHistoryScreen()),
-    );
-  }
-
-  void _showSoonMessage(BuildContext context, String label) {
-    context.showSnackBar(
-      '$label shortcuts arrive after the core expense flow is stable.',
     );
   }
 
@@ -317,6 +320,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return 'Archived Account';
   }
+
+  Future<void> _confirmDeleteExpense(ExpenseModel expense) async {
+    final label = expense.note.isEmpty ? expense.category : expense.note;
+    final confirmed = await confirmDestructiveAction(
+      context,
+      title: 'Delete transaction?',
+      message: 'Remove "$label" from your records? This cannot be undone.',
+      confirmLabel: 'Delete txn',
+    );
+    if (!confirmed || !mounted) {
+      return;
+    }
+
+    await ref.read(expenseControllerProvider).deleteExpense(expense.id);
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Transaction removed.')));
+  }
 }
 
 class _Header extends StatelessWidget {
@@ -356,7 +382,6 @@ class _Header extends StatelessWidget {
                 onPressed: onMenuPressed,
                 icon: const Icon(Icons.menu_rounded,
                     color: Colors.white, size: 28),
-                tooltip: 'Open menu',
               ),
               const SizedBox(width: 8),
               ClipRRect(
@@ -381,7 +406,6 @@ class _Header extends StatelessWidget {
                 onPressed: onSearchPressed,
                 icon: const Icon(Icons.search_rounded,
                     color: Colors.white, size: 28),
-                tooltip: 'Search transactions',
               ),
             ],
           ),
@@ -436,7 +460,7 @@ class _MetricColumn extends StatelessWidget {
         Text(
           label,
           style: const TextStyle(
-            color: Color(0xB3FFFFFF),
+            color: AppColors.overlayWhiteMedium,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.2,
           ),
@@ -509,15 +533,9 @@ class _DateStripCard extends StatelessWidget {
                   ),
                 ),
               ),
-              _DateNavButton(
-                  icon: Icons.arrow_back_rounded,
-                  tooltip: 'Previous week',
-                  onTap: onPrevious),
+              _DateNavButton(icon: Icons.arrow_back_rounded, onTap: onPrevious),
               const SizedBox(width: 8),
-              _DateNavButton(
-                  icon: Icons.arrow_forward_rounded,
-                  tooltip: 'Next week',
-                  onTap: onNext),
+              _DateNavButton(icon: Icons.arrow_forward_rounded, onTap: onNext),
             ],
           ),
           const SizedBox(height: 18),
@@ -541,8 +559,8 @@ class _DateStripCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF7F9FC),
-              borderRadius: BorderRadius.circular(20),
+              color: AppColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(AppRadii.lg),
             ),
             child: Row(
               children: <Widget>[
@@ -550,7 +568,7 @@ class _DateStripCard extends StatelessWidget {
                   child: Text(
                     'Selected day',
                     style: TextStyle(
-                      color: Color(0xFF6D7D98),
+                      color: AppColors.textSecondary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -558,7 +576,7 @@ class _DateStripCard extends StatelessWidget {
                 Text(
                   '$transactionCount txns',
                   style: const TextStyle(
-                    color: Color(0xFF8F9FB7),
+                    color: AppColors.textTertiary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -569,7 +587,7 @@ class _DateStripCard extends StatelessWidget {
                     child: Text(
                       selectedTotalText,
                       style: const TextStyle(
-                        color: Color(0xFF152039),
+                        color: AppColors.textDark,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -585,32 +603,23 @@ class _DateStripCard extends StatelessWidget {
 }
 
 class _DateNavButton extends StatelessWidget {
-  const _DateNavButton(
-      {required this.icon, required this.tooltip, required this.onTap});
+  const _DateNavButton({required this.icon, required this.onTap});
 
   final IconData icon;
-  final String tooltip;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFF5F7FB),
+      color: AppColors.surfaceMuted,
       shape: const CircleBorder(),
-      child: Tooltip(
-        message: tooltip,
-        child: Semantics(
-          button: true,
-          label: tooltip,
-          child: InkWell(
-            onTap: onTap,
-            customBorder: const CircleBorder(),
-            child: SizedBox(
-              width: 36,
-              height: 36,
-              child: Icon(icon, size: 18, color: AppColors.textMuted),
-            ),
-          ),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(icon, size: 18, color: AppColors.textMuted),
         ),
       ),
     );
@@ -632,43 +641,36 @@ class _DayPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: '$label $day',
-      selected: isSelected,
-      excludeSemantics: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFD6F57C) : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            children: <Widget>[
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected
-                      ? const Color(0xFF253411)
-                      : const Color(0xFF96A2B8),
-                  fontWeight: FontWeight.w800,
-                ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 3),
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.accentLime : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+        ),
+        child: Column(
+          children: <Widget>[
+            Text(
+              label,
+              style: TextStyle(
+                color:
+                    isSelected ? AppColors.accentLimeDark : AppColors.textMuted,
+                fontWeight: FontWeight.w800,
               ),
-              const SizedBox(height: 8),
-              Text(
-                day,
-                style: TextStyle(
-                  color:
-                      isSelected ? const Color(0xFF253411) : AppColors.textDark,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 18,
-                ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              day,
+              style: TextStyle(
+                color:
+                    isSelected ? AppColors.accentLimeDark : AppColors.textDark,
+                fontWeight: FontWeight.w900,
+                fontSize: 18,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -704,7 +706,7 @@ class _EmptyCard extends StatelessWidget {
           Text(
             message,
             style: const TextStyle(
-              color: Color(0xFF6F7F9C),
+              color: AppColors.textSecondary,
               height: 1.5,
               fontWeight: FontWeight.w600,
             ),
@@ -723,39 +725,35 @@ class _AmountChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: 'Quick add $label',
-      child: Material(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            width: 92,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x1209386D),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.textDark,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                  ),
+        child: Container(
+          width: 92,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const <BoxShadow>[
+              BoxShadow(
+                color: Color(0x1209386D),
+                blurRadius: 18,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textDark,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
                 ),
               ),
             ),

@@ -32,7 +32,8 @@ class TransactionCard extends ConsumerWidget {
     final currencyFormat = NumberFormat.currency(
       locale: locale,
       symbol: symbol,
-      decimalDigits: expense.amount.truncateToDouble() == expense.amount ? 0 : 2,
+      decimalDigits:
+          expense.amount.truncateToDouble() == expense.amount ? 0 : 2,
     );
     final timeFormat = DateFormat('HH:mm');
 
@@ -41,14 +42,12 @@ class TransactionCard extends ConsumerWidget {
       income: expense.isIncome,
     );
     final signedPrefix = expense.isIncome ? '+' : '-';
-    final amountColor = expense.isIncome
-        ? AppColors.success
-        : AppColors.danger;
+    final amountColor = expense.isIncome ? AppColors.success : AppColors.danger;
     final sourceLabel = accountLabel?.trim().isNotEmpty ?? false
         ? accountLabel!
         : expense.accountId == null
-        ? 'No Account'
-        : 'Archived Account';
+            ? 'No Account'
+            : 'Archived Account';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -80,7 +79,7 @@ class TransactionCard extends ConsumerWidget {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: category.color.withOpacity(0.14),
+                    color: category.color.withValues(alpha: 0.08),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(category.icon, color: category.color),

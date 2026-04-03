@@ -182,9 +182,11 @@ User taps FAB
 ```text
 1. Create feature branch
 2. Implement vertical slice
-3. Test via flutter run
-4. Commit small changes
-5. Push to GitHub
+3. Run flutter pub get (first run or after dependency changes)
+4. Validate via flutter analyze && flutter test
+5. Test via flutter run
+6. Commit small changes
+7. Push to GitHub
 ```
 
 ## 15. Immediate Task (Strict)
@@ -221,6 +223,12 @@ Keep it minimal. Ship fast. Iterate later.
 
 ## 18. Commands (Critical for Agent)
 
+### Get Dependencies
+
+```text
+flutter pub get
+```
+
 ### Run App
 
 ```text
@@ -245,10 +253,42 @@ dart format .
 flutter build apk
 ```
 
+### Build App Bundle
+
+```text
+flutter build appbundle
+```
+
 ### Hive Setup
 
 ```text
 flutter packages pub run build_runner build
+```
+
+TODO: verify if code generation is still needed; adapters are currently hand-written and `build_runner` is not in `pubspec.yaml`.
+
+### Run All Tests
+
+```text
+flutter test
+```
+
+### Run Single Test
+
+```text
+flutter test test/path/to/test_file.dart
+```
+
+### Update Launcher Icons
+
+```text
+flutter pub run flutter_launcher_icons:main
+```
+
+### Update Splash Screen
+
+```text
+flutter pub run flutter_native_splash:create
 ```
 
 ### Debug Single File

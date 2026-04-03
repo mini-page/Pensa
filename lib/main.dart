@@ -56,8 +56,10 @@ class XPensaApp extends ConsumerWidget {
       ),
       themeMode: themeMode,
       home: preferencesAsync.when(
-        data: (_) => onboardingCompleted ? const AppShell() : const OnboardingScreen(),
-        loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+        data: (_) =>
+            onboardingCompleted ? const AppShell() : const OnboardingScreen(),
+        loading: () =>
+            const Scaffold(body: Center(child: CircularProgressIndicator())),
         error: (_, __) => const AppShell(), // Fallback
       ),
     );

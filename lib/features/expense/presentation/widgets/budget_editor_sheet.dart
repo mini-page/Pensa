@@ -109,14 +109,12 @@ class _BudgetEditorSheetState extends State<_BudgetEditorSheet> {
             DropdownButtonFormField<String>(
               initialValue: _selectedCategory,
               decoration: _inputDecoration('Category'),
-              items: widget.categories
-                  .map((category) {
-                    return DropdownMenuItem<String>(
-                      value: category.name,
-                      child: Text(category.name),
-                    );
-                  })
-                  .toList(growable: false),
+              items: widget.categories.map((category) {
+                return DropdownMenuItem<String>(
+                  value: category.name,
+                  child: Text(category.name),
+                );
+              }).toList(growable: false),
               onChanged: (value) {
                 if (value == null) {
                   return;

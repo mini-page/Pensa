@@ -74,13 +74,14 @@ class ProfileScreen extends ConsumerWidget {
                   _StatusChip(
                     label: smartReminders ? 'Reminders On' : 'Reminders Off',
                   ),
-                  _StatusChip(label: privacyMode ? 'Privacy On' : 'Privacy Off'),
+                  _StatusChip(
+                      label: privacyMode ? 'Privacy On' : 'Privacy Off'),
                   _StatusChip(
                     label: themeMode == ThemeMode.dark
                         ? 'Dark Theme'
                         : themeMode == ThemeMode.system
-                        ? 'System Theme'
-                        : 'Light Theme',
+                            ? 'System Theme'
+                            : 'Light Theme',
                   ),
                   if (preferences == null)
                     const _StatusChip(label: 'Loading Preferences'),
@@ -90,7 +91,8 @@ class ProfileScreen extends ConsumerWidget {
               const _InfoCard(
                 icon: Icons.info_outline_rounded,
                 title: 'Settings moved',
-                content: 'All app settings and preferences have been moved to the sidebar for quicker access.',
+                content:
+                    'All app settings and preferences have been moved to the sidebar for quicker access.',
               ),
             ],
           ),

@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../data/models/recurring_subscription_model.dart';
 import '../provider/preferences_providers.dart';
 import '../provider/recurring_subscription_providers.dart';
 import '../widgets/subscription_editor_sheet.dart';
 import '../widgets/subscription_icons.dart';
+import 'ui_feedback.dart';
 
 class RecurringToolView extends ConsumerWidget {
   const RecurringToolView({super.key});
@@ -15,7 +17,8 @@ class RecurringToolView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subscriptionState = ref.watch(recurringSubscriptionListProvider);
-    final subscriptions = subscriptionState.value ?? const <RecurringSubscriptionModel>[];
+    final subscriptions =
+        subscriptionState.value ?? const <RecurringSubscriptionModel>[];
     final locale = ref.watch(localeProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
@@ -36,18 +39,11 @@ class RecurringToolView extends ConsumerWidget {
                 children: [
                   Text(
                     'Recurring Bills',
-                    style: TextStyle(
-                      color: AppColors.textDark,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
+                    style: AppTextStyles.sectionHeading,
                   ),
                   Text(
                     'Manage your monthly subscriptions',
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTextStyles.sectionSubtitle,
                   ),
                 ],
               ),
@@ -62,7 +58,7 @@ class RecurringToolView extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         if (subscriptionState.hasError)
           const _StateCard(
             title: 'Unable to load subscriptions',
@@ -73,7 +69,8 @@ class RecurringToolView extends ConsumerWidget {
         else if (subscriptions.isEmpty)
           const _StateCard(
             title: 'No recurring subscriptions',
-            message: 'Create the first subscription to keep upcoming bills visible.',
+            message:
+                'Create the first subscription to keep upcoming bills visible.',
           )
         else
           ...subscriptions.map((subscription) {
@@ -82,10 +79,13 @@ class RecurringToolView extends ConsumerWidget {
               child: _SubscriptionTile(
                 subscription: subscription,
                 amountText: currency.format(subscription.amount),
-                onTap: () => _openEditor(context, ref, subscription: subscription),
-                onDelete: () => ref
-                    .read(recurringSubscriptionControllerProvider)
-                    .deleteSubscription(subscription.id),
+                onTap: () =>
+                    _openEditor(context, ref, subscription: subscription),
+                onDelete: () => _confirmDeleteSubscription(
+                  context,
+                  ref,
+                  subscription,
+                ),
               ),
             );
           }),
@@ -114,6 +114,35 @@ class RecurringToolView extends ConsumerWidget {
           isActive: result.isActive,
         );
   }
+
+  Future<void> _confirmDeleteSubscription(
+    BuildContext context,
+    WidgetRef ref,
+    RecurringSubscriptionModel subscription,
+  ) async {
+    final confirmed = await confirmDestructiveAction(
+      context,
+      title: 'Delete recurring bill?',
+      message:
+          'Remove ${subscription.name} from recurring bills? This clears its schedule from the tool.',
+      confirmLabel: 'Delete bill',
+    );
+    if (!confirmed || !context.mounted) {
+      return;
+    }
+
+    await ref
+        .read(recurringSubscriptionControllerProvider)
+        .deleteSubscription(subscription.id);
+
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${subscription.name} removed.')),
+    );
+  }
 }
 
 class _SubscriptionTile extends StatelessWidget {
@@ -133,12 +162,12 @@ class _SubscriptionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(AppRadii.lg),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Row(
             children: <Widget>[
               Container(
@@ -146,7 +175,7 @@ class _SubscriptionTile extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
                 ),
                 child: Icon(
                   resolveSubscriptionIcon(subscription.iconKey),
@@ -227,7 +256,7 @@ class _StateCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(AppRadii.xl),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,16 +264,16 @@ class _StateCard extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              color: Color(0xFF152039),
+              color: AppColors.textDark,
               fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xxs),
           Text(
             message,
             style: const TextStyle(
-              color: Color(0xFF6E7F9C),
+              color: AppColors.textSecondary,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),

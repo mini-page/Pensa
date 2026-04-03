@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/context_extensions.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../provider/account_providers.dart';
 import '../widgets/account_editor_sheet.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/power_pill_menu.dart';
+import '../widgets/ui_feedback.dart';
 import 'accounts_screen.dart';
 import 'add_expense_screen.dart';
 import 'categories_screen.dart';
@@ -29,8 +30,18 @@ class _AppShellState extends ConsumerState<AppShell> {
   void _showPowerMenu() {
     _menuOverlay = OverlayEntry(
       builder: (context) => PowerPillMenu(
-        onVoice: () => context.showSnackBar('Voice input arriving soon.'),
-        onSplit: () => context.showSnackBar('Split bill tool arriving soon.'),
+        onVoice: () => showPlannedFeatureNotice(
+          context,
+          title: 'Voice capture is planned',
+          message:
+              'Voice capture stays hidden until the manual expense flow is fully settled.',
+        ),
+        onSplit: () => showPlannedFeatureNotice(
+          context,
+          title: 'Split shortcuts are planned',
+          message:
+              'Quick split actions will return after the current tools are polished.',
+        ),
         onScanner: () {
           _menuOverlay?.remove();
           _menuOverlay = null;
@@ -80,8 +91,8 @@ class _AppShellState extends ConsumerState<AppShell> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      AppColors.backgroundLight.withOpacity(0.0),
-                      AppColors.backgroundLight.withOpacity(0.8),
+                      AppColors.backgroundLight.withValues(alpha: 0.0),
+                      AppColors.backgroundLight.withValues(alpha: 0.8),
                       AppColors.backgroundLight,
                     ],
                   ),
@@ -92,7 +103,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         ],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 92),
+        padding: const EdgeInsets.only(bottom: AppSpacing.fabOffset),
         child: PowerPill(
           onTap: _handleFabPressed,
           onLongPress: _showPowerMenu,
@@ -135,9 +146,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       return;
     }
 
-    await ref
-        .read(accountControllerProvider)
-        .saveAccount(
+    await ref.read(accountControllerProvider).saveAccount(
           name: result.name,
           iconKey: result.iconKey,
           balance: result.balance,
@@ -147,7 +156,9 @@ class _AppShellState extends ConsumerState<AppShell> {
       return;
     }
 
-    context.showSnackBar('${result.name} created.');
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${result.name} created.')));
   }
 }
 
@@ -166,13 +177,16 @@ class _CustomFloatingNavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.md,
+        ),
         child: Container(
           height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(99),
+            borderRadius: BorderRadius.circular(AppRadii.pill),
             boxShadow: const <BoxShadow>[
               BoxShadow(
                 color: AppColors.cardShadow,
@@ -244,11 +258,14 @@ class _NavBarItem extends StatelessWidget {
         duration: const Duration(milliseconds: 300),
         curve: Curves.fastOutSlowIn,
         padding: isSelected
-            ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
-            : const EdgeInsets.all(12),
+            ? const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: 10,
+              )
+            : const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primaryBlue : Colors.transparent,
-          borderRadius: BorderRadius.circular(99),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

@@ -82,7 +82,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             child: Text(lang['name']!),
                           );
                         }).toList(),
-                        onChanged: (val) => setState(() => _selectedLocale = val!),
+                        onChanged: (val) =>
+                            setState(() => _selectedLocale = val!),
                       ),
                       const SizedBox(height: 24),
                       _buildSectionTitle('Currency'),
@@ -94,7 +95,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             child: Text(curr['name']!),
                           );
                         }).toList(),
-                        onChanged: (val) => setState(() => _selectedCurrency = val!),
+                        onChanged: (val) =>
+                            setState(() => _selectedCurrency = val!),
                       ),
                       const SizedBox(height: 24),
                       _buildSectionTitle('First Account'),
@@ -124,11 +126,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       _buildSectionTitle('Theme'),
                       Row(
                         children: [
-                          _buildThemeOption('Light', 'light', Icons.light_mode_outlined),
+                          _buildThemeOption(
+                              'Light', 'light', Icons.light_mode_outlined),
                           const SizedBox(width: 12),
-                          _buildThemeOption('Dark', 'dark', Icons.dark_mode_outlined),
+                          _buildThemeOption(
+                              'Dark', 'dark', Icons.dark_mode_outlined),
                           const SizedBox(width: 12),
-                          _buildThemeOption('System', 'system', Icons.settings_brightness_outlined),
+                          _buildThemeOption('System', 'system',
+                              Icons.settings_brightness_outlined),
                         ],
                       ),
                       const SizedBox(height: 24),
@@ -138,9 +143,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         title: const Text('Smart Reminders'),
                         subtitle: const Text('Get notified for pending bills'),
                         value: _smartReminders,
-                        activeColor: AppColors.primaryBlue,
                         activeThumbColor: AppColors.primaryBlue,
-                        onChanged: (val) => setState(() => _smartReminders = val),
+                        onChanged: (val) =>
+                            setState(() => _smartReminders = val),
                       ),
                     ],
                   ),
@@ -198,7 +203,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(fontSize: 12, color: AppColors.textSubtle),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.backgroundLight),
@@ -250,10 +256,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primaryBlue.withValues(alpha: 0.1) : Colors.white,
+              color: isSelected
+                  ? AppColors.primaryBlue.withValues(alpha: 0.1)
+                  : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? AppColors.primaryBlue : AppColors.backgroundLight,
+                color: isSelected
+                    ? AppColors.primaryBlue
+                    : AppColors.backgroundLight,
                 width: 2,
               ),
             ),
@@ -262,14 +272,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 Icon(
                   icon,
                   size: 20,
-                  color: isSelected ? AppColors.primaryBlue : AppColors.textSubtle,
+                  color:
+                      isSelected ? AppColors.primaryBlue : AppColors.textSubtle,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: isSelected ? AppColors.primaryBlue : AppColors.textSubtle,
+                    color: isSelected
+                        ? AppColors.primaryBlue
+                        : AppColors.textSubtle,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -291,11 +304,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     // Update preferences and complete onboarding
     await ref.read(appPreferencesControllerProvider).updateAll(
-      themeModeKey: _selectedThemeKey,
-      locale: _selectedLocale,
-      currencySymbol: _selectedCurrency,
-      smartRemindersEnabled: _smartReminders,
-      isOnboardingCompleted: true,
-    );
+          themeModeKey: _selectedThemeKey,
+          locale: _selectedLocale,
+          currencySymbol: _selectedCurrency,
+          smartRemindersEnabled: _smartReminders,
+          isOnboardingCompleted: true,
+        );
   }
 }

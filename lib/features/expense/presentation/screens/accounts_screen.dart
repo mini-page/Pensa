@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/context_extensions.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../../data/models/account_model.dart';
 import '../provider/account_providers.dart';
 import '../provider/expense_providers.dart';
@@ -13,6 +13,7 @@ import '../widgets/account_icons.dart';
 import '../widgets/amount_visibility.dart';
 import '../widgets/recurring_tool_view.dart';
 import '../widgets/split_bill_tool_view.dart';
+import '../widgets/ui_feedback.dart';
 
 class AccountsScreen extends ConsumerStatefulWidget {
   const AccountsScreen({super.key});
@@ -90,11 +91,14 @@ class _SliverAccountsTabView extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: <Color>[AppColors.primaryBlue, AppColors.primaryBlueLight],
+                  colors: <Color>[
+                    AppColors.primaryBlue,
+                    AppColors.primaryBlueLight,
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(32),
+                borderRadius: BorderRadius.circular(AppRadii.hero),
                 boxShadow: const <BoxShadow>[
                   BoxShadow(
                     color: AppColors.darkBlueShadow,
@@ -109,7 +113,7 @@ class _SliverAccountsTabView extends ConsumerWidget {
                   const Text(
                     'Net Worth',
                     style: TextStyle(
-                      color: Color(0xD9FFFFFF),
+                      color: AppColors.overlayWhiteBold,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
@@ -176,11 +180,11 @@ class _SliverAccountsTabView extends ConsumerWidget {
                   IconButton.filled(
                     onPressed: () => _openAccountEditor(context, ref),
                     icon: const Icon(Icons.add_rounded),
-                    tooltip: 'Add new account',
                     style: IconButton.styleFrom(
                       backgroundColor: AppColors.primaryBlue,
                     ),
-                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    constraints:
+                        const BoxConstraints(minWidth: 40, minHeight: 40),
                   ),
                 ],
               ),
@@ -218,7 +222,7 @@ class _SliverAccountsTabView extends ConsumerWidget {
                         ref,
                         account: account,
                       ),
-                      onDelete: () => _deleteAccount(context, ref, account.id),
+                      onDelete: () => _deleteAccount(context, ref, account),
                     ),
                   );
                 },
@@ -247,19 +251,36 @@ class _SliverAccountsTabView extends ConsumerWidget {
 
     if (!context.mounted) return;
 
-    context.showSnackBar(
-      account == null ? '${result.name} created.' : '${result.name} updated.',
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          account == null
+              ? '${result.name} created.'
+              : '${result.name} updated.',
+        ),
+      ),
     );
   }
 
   Future<void> _deleteAccount(
     BuildContext context,
     WidgetRef ref,
-    String id,
+    AccountModel account,
   ) async {
-    await ref.read(accountControllerProvider).deleteAccount(id);
+    final confirmed = await confirmDestructiveAction(
+      context,
+      title: 'Delete account?',
+      message:
+          'Remove ${account.name}? Transactions stay in history, but the account itself will be deleted.',
+      confirmLabel: 'Delete account',
+    );
+    if (!confirmed || !context.mounted) return;
+
+    await ref.read(accountControllerProvider).deleteAccount(account.id);
     if (!context.mounted) return;
-    context.showSnackBar('Account removed.');
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${account.name} removed.')));
   }
 }
 
@@ -365,8 +386,8 @@ class _SummaryChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0x1FFFFFFF),
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.overlayWhiteSoft,
+        borderRadius: BorderRadius.circular(AppRadii.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,7 +395,7 @@ class _SummaryChip extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: const TextStyle(
-              color: Color(0xCCFFFFFF),
+              color: AppColors.overlayWhiteStrong,
               fontSize: 10,
               fontWeight: FontWeight.w800,
               letterSpacing: 1.1,
@@ -458,7 +479,9 @@ class _AccountCard extends StatelessWidget {
                       child: Text(
                         'Balance: ${isNegative ? '-' : ''}$balanceText',
                         style: TextStyle(
-                          color: isNegative ? AppColors.danger : AppColors.primaryBlue,
+                          color: isNegative
+                              ? AppColors.danger
+                              : AppColors.primaryBlue,
                           fontWeight: FontWeight.w900,
                           fontSize: 16,
                         ),
@@ -468,7 +491,8 @@ class _AccountCard extends StatelessWidget {
                 ),
               ),
               PopupMenuButton<String>(
-                icon: const Icon(Icons.more_horiz_rounded, color: AppColors.textMuted),
+                icon: const Icon(Icons.more_horiz_rounded,
+                    color: AppColors.textMuted),
                 onSelected: (value) {
                   if (value == 'delete') {
                     onDelete();
@@ -505,7 +529,8 @@ class _EmptyAccountsCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.wallet_outlined, size: 42, color: AppColors.primaryBlue),
+            const Icon(Icons.wallet_outlined,
+                size: 42, color: AppColors.primaryBlue),
             const SizedBox(height: 12),
             const Text(
               'No accounts yet',
@@ -519,7 +544,8 @@ class _EmptyAccountsCard extends StatelessWidget {
             const Text(
               'Create your first account to track balances.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                  color: AppColors.textMuted, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
             FilledButton(

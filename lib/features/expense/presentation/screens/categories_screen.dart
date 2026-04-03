@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/context_extensions.dart';
 import '../../data/models/expense_model.dart';
 import '../provider/budget_providers.dart';
 import '../provider/expense_providers.dart';
@@ -238,8 +237,12 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       return;
     }
 
-    context.showSnackBar(
-      '${result.category} budget updated to ₹${result.amount.toStringAsFixed(0)}.',
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${result.category} budget updated to ₹${result.amount.toStringAsFixed(0)}.',
+        ),
+      ),
     );
   }
 
@@ -351,7 +354,7 @@ class _GridCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: tone.withOpacity(0.18),
+      color: tone.withValues(alpha: 0.18),
       borderRadius: BorderRadius.circular(22),
       child: Semantics(
         button: true,
@@ -370,7 +373,7 @@ class _GridCategoryCard extends StatelessWidget {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: tone.withOpacity(0.55),
+                        color: tone.withValues(alpha: 0.55),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(icon, color: Colors.white, size: 22),
@@ -425,7 +428,7 @@ class _GridCategoryCard extends StatelessWidget {
                 child: PopupMenuButton<String>(
                   icon: Icon(
                     Icons.more_vert_rounded,
-                    color: tone.withOpacity(0.7),
+                    color: tone.withValues(alpha: 0.7),
                     size: 20,
                   ),
                   padding: EdgeInsets.zero,
@@ -458,19 +461,11 @@ class _AddCategoryCard extends StatelessWidget {
     return Material(
       color: const Color(0xFFD8DFE9),
       borderRadius: BorderRadius.circular(22),
-      child: Semantics(
-        button: true,
-        label: 'Add Category',
-        child: Tooltip(
-          message: 'Add new category',
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(22),
-            child: const Center(
-              child:
-                  Icon(Icons.add_rounded, color: AppColors.textMuted, size: 40),
-            ),
-          ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: const Center(
+          child: Icon(Icons.add_rounded, color: AppColors.textMuted, size: 40),
         ),
       ),
     );

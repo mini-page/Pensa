@@ -58,7 +58,8 @@ void main() {
         expect(stats.todayTotal, 350.0);
         expect(stats.todayIncomeTotal, 1000.0);
         expect(stats.transactionCount, 4);
-        expect(stats.categoryTotals, {'Transportation': 200.0, 'Food & Dining': 150.0});
+        expect(stats.categoryTotals,
+            {'Transportation': 200.0, 'Food & Dining': 150.0});
         expect(stats.incomeCategoryTotals, {'Salary': 1000.0});
       },
     );

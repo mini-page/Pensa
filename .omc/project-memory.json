@@ -1,0 +1,175 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775217274990,
+  "projectRoot": "C:\\Users\\umang\\StudioProjects\\XPensa",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "assets",
+      "docs",
+      "lib",
+      "test"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "android": {
+      "path": "android",
+      "purpose": null,
+      "fileCount": 7,
+      "lastAccessed": 1775217274800,
+      "keyFiles": [
+        "build.gradle.kts",
+        "gradle.properties",
+        "gradlew",
+        "gradlew.bat",
+        "local.properties"
+      ]
+    },
+    "assets": {
+      "path": "assets",
+      "purpose": "Static assets",
+      "fileCount": 0,
+      "lastAccessed": 1775217274802,
+      "keyFiles": []
+    },
+    "benchmark": {
+      "path": "benchmark",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775217274803,
+      "keyFiles": [
+        "account_save_benchmark.dart"
+      ]
+    },
+    "build": {
+      "path": "build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1775217274858,
+      "keyFiles": []
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 0,
+      "lastAccessed": 1775217274900,
+      "keyFiles": []
+    },
+    "lib": {
+      "path": "lib",
+      "purpose": "Library code",
+      "fileCount": 1,
+      "lastAccessed": 1775217274908,
+      "keyFiles": [
+        "main.dart"
+      ]
+    },
+    "public_assets": {
+      "path": "public_assets",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1775217274918,
+      "keyFiles": [
+        "bm-euljiro.zip",
+        "buchi-sans-demo.zip",
+        "glekzo.zip",
+        "Google-Pixel5-localhost.png",
+        "raizent-demo.zip"
+      ]
+    },
+    "test": {
+      "path": "test",
+      "purpose": "Test files",
+      "fileCount": 1,
+      "lastAccessed": 1775217274942,
+      "keyFiles": [
+        "model_id_test.dart"
+      ]
+    },
+    "android\\app": {
+      "path": "android\\app",
+      "purpose": "Application code",
+      "fileCount": 1,
+      "lastAccessed": 1775217274950,
+      "keyFiles": [
+        "build.gradle.kts"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "lib\\features\\expense\\presentation\\screens\\categories_screen.dart",
+      "accessCount": 7,
+      "lastAccessed": 1775223588964,
+      "type": "file"
+    },
+    {
+      "path": "lib\\features\\expense\\presentation\\screens\\onboarding_screen.dart",
+      "accessCount": 7,
+      "lastAccessed": 1775223594322,
+      "type": "file"
+    },
+    {
+      "path": "lib\\features\\expense\\presentation\\screens\\home_screen.dart",
+      "accessCount": 6,
+      "lastAccessed": 1775222962439,
+      "type": "file"
+    },
+    {
+      "path": "lib\\features\\expense\\presentation\\screens\\add_expense_screen.dart",
+      "accessCount": 6,
+      "lastAccessed": 1775223592271,
+      "type": "file"
+    },
+    {
+      "path": "lib\\features\\expense\\presentation\\screens\\accounts_screen.dart",
+      "accessCount": 4,
+      "lastAccessed": 1775222921391,
+      "type": "file"
+    },
+    {
+      "path": "lib\\features\\expense\\presentation\\provider\\expense_providers.dart",
+      "accessCount": 3,
+      "lastAccessed": 1775222886947,
+      "type": "file"
+    },
+    {
+      "path": "lib\\features\\expense\\presentation\\screens\\app_shell.dart",
+      "accessCount": 3,
+      "lastAccessed": 1775222952936,
+      "type": "file"
+    },
+    {
+      "path": ".planning\\plans\\2026-04-03-ui-integration.md",
+      "accessCount": 1,
+      "lastAccessed": 1775222808653,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

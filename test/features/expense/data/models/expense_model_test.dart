@@ -67,7 +67,9 @@ void main() {
         );
       });
 
-      test('should throw ArgumentError when category is empty or only whitespace', () {
+      test(
+          'should throw ArgumentError when category is empty or only whitespace',
+          () {
         expect(
           () => ExpenseModel(
             id: 'test-id',
@@ -106,36 +108,36 @@ void main() {
         expect(model.date.isUtc, isTrue);
         expect(model.date, localDate.toUtc());
       });
-     group('Getters: signedAmount and isIncome', () {
-      test('should return positive amount and true for income', () {
-        final model = ExpenseModel(
-          id: 'test-id',
-          amount: 100.0,
-          category: 'Salary',
-          date: DateTime(2023),
-          note: '',
-          type: TransactionType.income,
-        );
+      group('Getters: signedAmount and isIncome', () {
+        test('should return positive amount and true for income', () {
+          final model = ExpenseModel(
+            id: 'test-id',
+            amount: 100.0,
+            category: 'Salary',
+            date: DateTime(2023),
+            note: '',
+            type: TransactionType.income,
+          );
 
-        expect(model.signedAmount, 100.0);
-        expect(model.isIncome, isTrue);
-      });
+          expect(model.signedAmount, 100.0);
+          expect(model.isIncome, isTrue);
+        });
 
-      test('should return negative amount and false for expense', () {
-        final model = ExpenseModel(
-          id: 'test-id',
-          amount: 50.0,
-          category: 'Food',
-          date: DateTime(2023),
-          note: '',
-          type: TransactionType.expense,
-        );
+        test('should return negative amount and false for expense', () {
+          final model = ExpenseModel(
+            id: 'test-id',
+            amount: 50.0,
+            category: 'Food',
+            date: DateTime(2023),
+            note: '',
+            type: TransactionType.expense,
+          );
 
-        expect(model.signedAmount, -50.0);
-        expect(model.isIncome, isFalse);
+          expect(model.signedAmount, -50.0);
+          expect(model.isIncome, isFalse);
+        });
       });
     });
-  });
 
     group('Factory: create', () {
       test('should generate UUID and trim fields', () {

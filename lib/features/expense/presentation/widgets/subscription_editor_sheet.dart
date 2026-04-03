@@ -158,7 +158,8 @@ class _SubscriptionEditorSheetState extends State<_SubscriptionEditorSheet> {
                 ),
                 child: Row(
                   children: <Widget>[
-                    const Icon(Icons.event_outlined, color: AppColors.primaryBlue),
+                    const Icon(Icons.event_outlined,
+                        color: AppColors.primaryBlue),
                     const SizedBox(width: 10),
                     Text(
                       DateFormat('EEE, d MMM yyyy').format(_nextBillDate),
@@ -183,23 +184,19 @@ class _SubscriptionEditorSheetState extends State<_SubscriptionEditorSheet> {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: subscriptionIconOptions
-                  .map((option) {
-                    final isSelected = option.key == _iconKey;
-                    return ChoiceChip(
-                      label: Icon(
-                        option.icon,
-                        color: isSelected
-                            ? Colors.white
-                            : AppColors.primaryBlue,
-                      ),
-                      selected: isSelected,
-                      selectedColor: AppColors.primaryBlue,
-                      backgroundColor: AppColors.lightBlueBg,
-                      onSelected: (_) => setState(() => _iconKey = option.key),
-                    );
-                  })
-                  .toList(growable: false),
+              children: subscriptionIconOptions.map((option) {
+                final isSelected = option.key == _iconKey;
+                return ChoiceChip(
+                  label: Icon(
+                    option.icon,
+                    color: isSelected ? Colors.white : AppColors.primaryBlue,
+                  ),
+                  selected: isSelected,
+                  selectedColor: AppColors.primaryBlue,
+                  backgroundColor: AppColors.lightBlueBg,
+                  onSelected: (_) => setState(() => _iconKey = option.key),
+                );
+              }).toList(growable: false),
             ),
             const SizedBox(height: 16),
             SwitchListTile.adaptive(

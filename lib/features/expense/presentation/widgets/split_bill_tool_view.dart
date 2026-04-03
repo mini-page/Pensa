@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 import '../provider/preferences_providers.dart';
 
 class SplitBillToolView extends ConsumerStatefulWidget {
@@ -40,64 +41,59 @@ class _SplitBillToolViewState extends ConsumerState<SplitBillToolView> {
       children: <Widget>[
         const Text(
           'Split Bill',
-          style: TextStyle(
-            color: Color(0xFF152039),
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-          ),
+          style: AppTextStyles.sectionHeading,
         ),
         const Text(
           'Calculate fair shares instantly',
-          style: TextStyle(
-            color: Color(0xFF8EA0BC),
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppTextStyles.sectionSubtitle,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         TextField(
           controller: _amountController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
             labelText: 'Total amount',
-            hintText: '0',
+            hintText: 'Enter amount',
             prefixText: '$symbol ',
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
               borderSide: BorderSide.none,
             ),
           ),
           onChanged: (_) => setState(() {}),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.sm),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.lg),
           ),
           child: Row(
             children: <Widget>[
               const Expanded(
                 child: Text(
                   'People',
-                  style: TextStyle(
-                    color: Color(0xFF152039),
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: AppTextStyles.bodyStrong,
                 ),
               ),
               _StepperButton(
                 icon: Icons.remove_rounded,
-                onTap: _peopleCount > 1 ? () => setState(() => _peopleCount -= 1) : null,
+                onTap: _peopleCount > 1
+                    ? () => setState(() => _peopleCount -= 1)
+                    : null,
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                 child: Text(
                   '$_peopleCount',
                   style: const TextStyle(
-                    color: Color(0xFF152039),
+                    color: AppColors.textDark,
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
                   ),
@@ -110,20 +106,23 @@ class _SplitBillToolViewState extends ConsumerState<SplitBillToolView> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF0A6BE8), Color(0xFF56A0FF)],
+              colors: <Color>[
+                AppColors.primaryBlue,
+                AppColors.primaryBlueLight,
+              ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(AppRadii.xl),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primaryBlue.withOpacity(0.2),
+                color: AppColors.primaryBlue.withValues(alpha: 0.2),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               ),
@@ -135,18 +134,14 @@ class _SplitBillToolViewState extends ConsumerState<SplitBillToolView> {
               const Text(
                 'Per person',
                 style: TextStyle(
-                  color: Color(0xCCFFFFFF),
+                  color: AppColors.overlayWhiteStrong,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xxs),
               Text(
                 currency.format(perPerson),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: AppTextStyles.cardValue,
               ),
             ],
           ),
@@ -164,7 +159,8 @@ class _StepperButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: onTap == null ? const Color(0xFFF1F4F8) : const Color(0xFFE8F1FF),
+      color:
+          onTap == null ? AppColors.surfaceDisabled : AppColors.surfaceAccent,
       shape: const CircleBorder(),
       child: InkWell(
         onTap: onTap,
@@ -174,7 +170,9 @@ class _StepperButton extends StatelessWidget {
           height: 32,
           child: Icon(
             icon,
-            color: onTap == null ? const Color(0xFFAAB7CB) : const Color(0xFF0A6BE8),
+            color: onTap == null
+                ? AppColors.disabledContent
+                : AppColors.primaryBlue,
             size: 18,
           ),
         ),

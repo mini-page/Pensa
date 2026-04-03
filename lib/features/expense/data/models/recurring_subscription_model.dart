@@ -11,10 +11,10 @@ class RecurringSubscriptionModel {
     this.note = '',
     this.isActive = true,
   }) : nextBillDate = DateTime(
-         nextBillDate.year,
-         nextBillDate.month,
-         nextBillDate.day,
-       ) {
+          nextBillDate.year,
+          nextBillDate.month,
+          nextBillDate.day,
+        ) {
     if (id.isEmpty) {
       throw ArgumentError.value(id, 'id', 'Subscription id cannot be empty.');
     }

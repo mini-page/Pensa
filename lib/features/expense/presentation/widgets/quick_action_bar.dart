@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
 
 class QuickActionItem {
   const QuickActionItem({
     required this.label,
     required this.icon,
     this.isHighlighted = false,
+    this.isEnabled = true,
+    this.badgeLabel,
   });
 
   final String label;
   final IconData icon;
   final bool isHighlighted;
+  final bool isEnabled;
+  final String? badgeLabel;
 }
 
 class QuickActionBar extends StatelessWidget {
@@ -38,17 +43,25 @@ class QuickActionBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: actions.map((action) {
-          final color = action.isHighlighted
+          final baseColor = action.isHighlighted
               ? AppColors.primaryBlue
               : AppColors.textMuted;
+          final color =
+              action.isEnabled ? baseColor : AppColors.disabledContent;
           return Semantics(
-            button: true,
-            label: action.label,
+            button: action.isEnabled,
+            enabled: action.isEnabled,
+            label: action.badgeLabel == null
+                ? action.label
+                : '${action.label} ${action.badgeLabel}',
             child: InkWell(
-              onTap: () => onTap(action),
-              borderRadius: BorderRadius.circular(18),
+              onTap: action.isEnabled ? () => onTap(action) : null,
+              borderRadius: BorderRadius.circular(AppRadii.md),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: AppSpacing.xs,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
@@ -62,6 +75,27 @@ class QuickActionBar extends StatelessWidget {
                         fontSize: 12,
                       ),
                     ),
+                    if (action.badgeLabel != null) ...<Widget>[
+                      const SizedBox(height: AppSpacing.xxs),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xs,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceAccent,
+                          borderRadius: BorderRadius.circular(AppRadii.pill),
+                        ),
+                        child: Text(
+                          action.badgeLabel!,
+                          style: const TextStyle(
+                            color: AppColors.primaryBlue,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

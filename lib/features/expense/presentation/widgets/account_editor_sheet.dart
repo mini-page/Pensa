@@ -129,27 +129,23 @@ class _AccountEditorSheetState extends State<_AccountEditorSheet> {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: accountIconOptions
-                  .map((option) {
-                    final isSelected = option.key == _iconKey;
-                    return ChoiceChip(
-                      label: Icon(
-                        option.icon,
-                        color: isSelected
-                            ? Colors.white
-                            : AppColors.primaryBlue,
-                      ),
-                      selected: isSelected,
-                      selectedColor: AppColors.primaryBlue,
-                      backgroundColor: AppColors.lightBlueBg,
-                      onSelected: (_) {
-                        setState(() {
-                          _iconKey = option.key;
-                        });
-                      },
-                    );
-                  })
-                  .toList(growable: false),
+              children: accountIconOptions.map((option) {
+                final isSelected = option.key == _iconKey;
+                return ChoiceChip(
+                  label: Icon(
+                    option.icon,
+                    color: isSelected ? Colors.white : AppColors.primaryBlue,
+                  ),
+                  selected: isSelected,
+                  selectedColor: AppColors.primaryBlue,
+                  backgroundColor: AppColors.lightBlueBg,
+                  onSelected: (_) {
+                    setState(() {
+                      _iconKey = option.key;
+                    });
+                  },
+                );
+              }).toList(growable: false),
             ),
             const SizedBox(height: 22),
             SizedBox(

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/utils/context_extensions.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/expense_model.dart';
 import '../provider/account_providers.dart';
@@ -52,8 +51,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     super.initState();
     final now = DateTime.now();
     final seedDate = widget.initialDate ?? now;
-    final shouldInjectCurrentTime =
-        widget.initialDate != null &&
+    final shouldInjectCurrentTime = widget.initialDate != null &&
         seedDate.hour == 0 &&
         seedDate.minute == 0 &&
         seedDate.second == 0 &&
@@ -111,7 +109,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final locale = ref.watch(localeProvider);
     final symbol = ref.watch(currencySymbolProvider);
 
-    final amountLabel = amount <= 0 ? '$symbol' '0' : _formatAmount(amount, locale, symbol);
+    final amountLabel =
+        amount <= 0 ? '$symbol' '0' : _formatAmount(amount, locale, symbol);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -125,7 +124,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   _TopCircleButton(
                     icon: Icons.close_rounded,
                     onTap: () => Navigator.of(context).pop(),
-                    tooltip: 'Close',
                   ),
                   const Spacer(),
                   Container(
@@ -154,7 +152,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     icon: Icons.calendar_month_rounded,
                     color: const Color(0xFF45D19A),
                     onTap: _pickDate,
-                    tooltip: 'Select date',
                   ),
                 ],
               ),
@@ -185,7 +182,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   _TopCircleButton(
                     icon: Icons.backspace_outlined,
                     onTap: _backspace,
-                    tooltip: 'Backspace',
                   ),
                 ],
               ),
@@ -209,7 +205,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                               setState(() {});
                             },
                             icon: const Icon(Icons.close_rounded),
-                            tooltip: 'Clear note',
                           ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -236,7 +231,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     icon: selectedCategory.icon,
                     iconColor: selectedCategory.color,
                     label: selectedCategory.name,
-                    background: selectedCategory.color.withOpacity(0.13),
+                    background: selectedCategory.color.withValues(alpha: 0.13),
                     onTap: _pickCategory,
                   ),
                   _SelectionCapsule(
@@ -246,9 +241,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     iconColor: AppColors.primaryBlue,
                     label: selectedAccount?.name ?? 'No account',
                     background: AppColors.lightBlueBg,
-                    onTap: accounts.isEmpty
-                        ? null
-                        : () => _pickAccount(accounts),
+                    onTap:
+                        accounts.isEmpty ? null : () => _pickAccount(accounts),
                   ),
                 ],
               ),
@@ -396,7 +390,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
-                      backgroundColor: category.color.withOpacity(0.15),
+                      backgroundColor: category.color.withValues(alpha: 0.15),
                       child: Icon(category.icon, color: category.color),
                     ),
                     title: Text(
@@ -566,14 +560,14 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         ref.read(accountListProvider).value ?? const <AccountModel>[];
     final effectiveAccountId = _resolveSelectedAccount(accounts)?.id;
     if (amount <= 0) {
-      context.showSnackBar('Enter a valid amount before saving.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid amount before saving.')),
+      );
       return;
     }
 
     if (widget.isEditing) {
-      await ref
-          .read(expenseControllerProvider)
-          .updateExpense(
+      await ref.read(expenseControllerProvider).updateExpense(
             id: widget.expenseId!,
             amount: amount,
             category: _selectedCategory,
@@ -583,9 +577,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             type: _selectedType,
           );
     } else {
-      await ref
-          .read(expenseControllerProvider)
-          .addExpense(
+      await ref.read(expenseControllerProvider).addExpense(
             amount: amount,
             category: _selectedCategory,
             date: _selectedDate,
@@ -605,13 +597,11 @@ class _TopCircleButton extends StatelessWidget {
   const _TopCircleButton({
     required this.icon,
     required this.onTap,
-    required this.tooltip,
     this.color = const Color(0xFF8B99B0),
   });
 
   final IconData icon;
   final VoidCallback onTap;
-  final String tooltip;
   final Color color;
 
   @override
@@ -627,7 +617,11 @@ class _TopCircleButton extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             customBorder: const CircleBorder(),
-            child: SizedBox(width: 42, height: 42, child: Icon(icon, color: AppColors.textMuted)),
+            child: SizedBox(
+              width: 42,
+              height: 42,
+              child: Icon(icon, color: AppColors.textMuted),
+            ),
           ),
         ),
       ),
@@ -659,9 +653,7 @@ class _ModeTab extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected
-                ? AppColors.textDark
-                : AppColors.textMuted,
+            color: isSelected ? AppColors.textDark : AppColors.textMuted,
             fontWeight: FontWeight.w800,
           ),
         ),

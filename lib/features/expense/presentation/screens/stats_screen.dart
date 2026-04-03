@@ -50,12 +50,12 @@ class StatsScreen extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Text(
                         'Money\nFlow',
-                        style: Theme.of(context).textTheme.displaySmall
-                            ?.copyWith(
-                              height: 1,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.textDark,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.displaySmall?.copyWith(
+                                  height: 1,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppColors.textDark,
+                                ),
                       ),
                     ],
                   ),
@@ -112,7 +112,10 @@ class StatsScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(26),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: <Color>[AppColors.primaryBlue, AppColors.primaryBlueLight],
+                  colors: <Color>[
+                    AppColors.primaryBlue,
+                    AppColors.primaryBlueLight
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -261,7 +264,6 @@ class StatsScreen extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 class _MetricTile extends StatelessWidget {
@@ -387,7 +389,7 @@ class _BreakdownCard extends StatelessWidget {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: category.color.withOpacity(0.16),
+                          color: category.color.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(category.icon, color: category.color),

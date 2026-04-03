@@ -7,8 +7,8 @@ class SubscriptionIconOption {
   final IconData icon;
 }
 
-const List<SubscriptionIconOption>
-subscriptionIconOptions = <SubscriptionIconOption>[
+const List<SubscriptionIconOption> subscriptionIconOptions =
+    <SubscriptionIconOption>[
   SubscriptionIconOption(key: 'tv', icon: Icons.tv_rounded),
   SubscriptionIconOption(key: 'music', icon: Icons.music_note_rounded),
   SubscriptionIconOption(key: 'video', icon: Icons.play_circle_outline_rounded),
