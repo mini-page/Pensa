@@ -25,38 +25,6 @@ class AppShell extends ConsumerStatefulWidget {
 class _AppShellState extends ConsumerState<AppShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
-  OverlayEntry? _menuOverlay;
-
-  void _showPowerMenu() {
-    _menuOverlay = OverlayEntry(
-      builder: (context) => PowerPillMenu(
-        onVoice: () => showPlannedFeatureNotice(
-          context,
-          title: 'Voice capture is planned',
-          message:
-              'Voice capture stays hidden until the manual expense flow is fully settled.',
-        ),
-        onSplit: () => showPlannedFeatureNotice(
-          context,
-          title: 'Split shortcuts are planned',
-          message:
-              'Quick split actions will return after the current tools are polished.',
-        ),
-        onScanner: () {
-          _menuOverlay?.remove();
-          _menuOverlay = null;
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ScannerScreen()),
-          );
-        },
-        onClose: () {
-          _menuOverlay?.remove();
-          _menuOverlay = null;
-        },
-      ),
-    );
-    Overlay.of(context).insert(_menuOverlay!);
-  }
 
   List<Widget> _buildPages() {
     return [
@@ -103,10 +71,9 @@ class _AppShellState extends ConsumerState<AppShell> {
         ],
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.fabOffset),
+        padding: const EdgeInsets.only(bottom: 78),
         child: PowerPill(
           onTap: _handleFabPressed,
-          onLongPress: _showPowerMenu,
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
