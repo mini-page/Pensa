@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:file_picker/file_picker.dart';
+
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_tokens.dart';
+import '../../../../core/utils/context_extensions.dart';
+import '../provider/backup_providers.dart';
 import '../provider/preferences_providers.dart';
 import '../widgets/ui_feedback.dart';
 
@@ -11,11 +16,23 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.read(appPreferencesControllerProvider);
+    final backupController = ref.read(backupControllerProvider);
+
     final smartReminders = ref.watch(smartRemindersEnabledProvider);
     final privacyMode = ref.watch(privacyModeEnabledProvider);
     final themeMode = ref.watch(appThemeModeProvider);
     final locale = ref.watch(localeProvider);
     final currencySymbol = ref.watch(currencySymbolProvider);
+
+    // Backup states
+    final autoBackup = ref.watch(autoBackupEnabledProvider);
+    final backupFrequency = ref.watch(backupFrequencyProvider);
+    final backupPath = ref.watch(backupDirectoryPathProvider);
+    final lastBackup = ref.watch(lastBackupDateTimeProvider);
+
+    final lastBackupText = lastBackup != null
+        ? DateFormat('MMM d, yyyy HH:mm').format(lastBackup)
+        : 'Never';
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
@@ -69,33 +86,88 @@ class SettingsScreen extends ConsumerWidget {
                 _buildActionTile(
                   icon: Icons.cloud_upload_outlined,
                   title: 'Export Data',
-                  subtitle: 'Create a local backup file',
-                  onTap: () {
-                    // Logic to be added in Task 4
-                    context.showSnackBar('Backup logic coming in next task.');
+                  subtitle: 'Create a local backup file (.xpensa)',
+                  onTap: () async {
+                    try {
+                      await backupController.exportData();
+                    } catch (e) {
+                      if (context.mounted) {
+                        context.showSnackBar('Export failed: $e');
+                      }
+                    }
                   },
                 ),
                 _buildActionTile(
                   icon: Icons.cloud_download_outlined,
                   title: 'Import Data',
                   subtitle: 'Restore from a backup file',
-                  onTap: () {
-                    // Logic to be added in Task 4
-                    context.showSnackBar('Restore logic coming in next task.');
+                  onTap: () async {
+                    final confirmed = await confirmDestructiveAction(
+                      context,
+                      title: 'Restore Data?',
+                      message: 'This will overwrite your current transactions. This action cannot be undone.',
+                      confirmLabel: 'Restore',
+                    );
+
+                    if (confirmed) {
+                      try {
+                        final success = await backupController.importData();
+                        if (success && context.mounted) {
+                          context.showSnackBar('Data restored successfully!');
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          context.showSnackBar('Import failed: $e');
+                        }
+                      }
+                    }
                   },
                 ),
                 _buildToggleTile(
                   icon: Icons.history_rounded,
                   title: 'Auto Backup',
                   subtitle: 'Scheduled offline backups',
-                  value: false, // Placeholder
-                  onChanged: (val) {
-                    showPlannedFeatureNotice(
-                      context,
-                      title: 'Auto backup is planned',
-                      message: 'Scheduled backups will arrive in the next update.',
-                    );
+                  value: autoBackup,
+                  onChanged: (val) async {
+                    if (val && backupPath == null) {
+                      final picked = await _pickBackupDirectory(context, ref);
+                      if (picked == null) return;
+                    }
+                    controller.setAutoBackup(val);
                   },
+                ),
+                if (autoBackup) ...[
+                  _buildSelectionTile(
+                    icon: Icons.timer_outlined,
+                    title: 'Backup Frequency',
+                    subtitle: 'Current: ${backupFrequency.toUpperCase()}',
+                    value: backupFrequency,
+                    onChanged: (val) {
+                      if (val != null) controller.setBackupFrequency(val);
+                    },
+                    items: const [
+                      DropdownMenuItem(value: 'daily', child: Text('Daily')),
+                      DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                      DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+                    ],
+                  ),
+                  _buildActionTile(
+                    icon: Icons.folder_open_rounded,
+                    title: 'Backup Location',
+                    subtitle: backupPath ?? 'Not set',
+                    onTap: () => _pickBackupDirectory(context, ref),
+                  ),
+                ],
+                ListTile(
+                  leading: const _TileIcon(icon: Icons.update_rounded),
+                  title: const Text(
+                    'Last Backup',
+                    style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: Text(
+                    lastBackupText,
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
                 ),
               ],
             ),
@@ -120,6 +192,50 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<String?> _pickBackupDirectory(BuildContext context, WidgetRef ref) async {
+    // Request permission first
+    final status = await Permission.storage.request();
+    if (!status.isGranted && !status.isLimited) {
+      if (context.mounted) {
+        context.showSnackBar('Storage permission is required for auto-backups.');
+      }
+      return null;
+    }
+
+    final path = await FilePicker.platform.getDirectoryPath();
+    if (path != null) {
+      ref.read(appPreferencesControllerProvider).setBackupDirectory(path);
+    }
+    return path;
+  }
+
+  Widget _buildSelectionTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String value,
+    required ValueChanged<String?> onChanged,
+    required List<DropdownMenuItem<String>> items,
+  }) {
+    return ListTile(
+      leading: _TileIcon(icon: icon),
+      title: Text(
+        title,
+        style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+      ),
+      trailing: DropdownButton<String>(
+        value: value,
+        underline: const SizedBox(),
+        onChanged: onChanged,
+        items: items,
       ),
     );
   }

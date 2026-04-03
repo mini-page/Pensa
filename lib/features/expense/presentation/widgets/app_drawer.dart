@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../provider/preferences_providers.dart';
 import '../screens/settings_screen.dart';
 
 class AppDrawer extends ConsumerWidget {

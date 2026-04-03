@@ -5,7 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../data/datasource/backup_local_datasource.dart';
-import '../../../core/utils/hive_bootstrap.dart';
+import '../../../../core/utils/hive_bootstrap.dart';
 
 final backupLocalDatasourceProvider = Provider<BackupLocalDatasource>((ref) {
   return BackupLocalDatasource();

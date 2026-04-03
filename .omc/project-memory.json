@@ -129,15 +129,21 @@
       "type": "file"
     },
     {
+      "path": "lib\\features\\expense\\presentation\\screens\\app_shell.dart",
+      "accessCount": 12,
+      "lastAccessed": 1775231654982,
+      "type": "file"
+    },
+    {
       "path": "lib\\features\\expense\\presentation\\screens\\home_screen.dart",
       "accessCount": 9,
       "lastAccessed": 1775230474018,
       "type": "file"
     },
     {
-      "path": "lib\\features\\expense\\presentation\\screens\\app_shell.dart",
+      "path": "lib\\features\\expense\\presentation\\provider\\preferences_providers.dart",
       "accessCount": 8,
-      "lastAccessed": 1775230665215,
+      "lastAccessed": 1775233342944,
       "type": "file"
     },
     {
@@ -153,9 +159,21 @@
       "type": "file"
     },
     {
+      "path": "lib\\features\\expense\\presentation\\widgets\\app_drawer.dart",
+      "accessCount": 6,
+      "lastAccessed": 1775233569473,
+      "type": "file"
+    },
+    {
       "path": "lib\\features\\expense\\presentation\\widgets\\quick_action_bar.dart",
       "accessCount": 5,
       "lastAccessed": 1775230664037,
+      "type": "file"
+    },
+    {
+      "path": "pubspec.yaml",
+      "accessCount": 5,
+      "lastAccessed": 1775233565119,
       "type": "file"
     },
     {
@@ -171,15 +189,39 @@
       "type": "file"
     },
     {
+      "path": "lib\\features\\expense\\presentation\\screens\\settings_screen.dart",
+      "accessCount": 4,
+      "lastAccessed": 1775233568217,
+      "type": "file"
+    },
+    {
       "path": "lib\\features\\expense\\presentation\\provider\\expense_providers.dart",
       "accessCount": 3,
       "lastAccessed": 1775222886947,
       "type": "file"
     },
     {
+      "path": "lib\\main.dart",
+      "accessCount": 3,
+      "lastAccessed": 1775233235330,
+      "type": "file"
+    },
+    {
       "path": "android\\gradle.properties",
       "accessCount": 2,
       "lastAccessed": 1775224830746,
+      "type": "file"
+    },
+    {
+      "path": "lib\\features\\expense\\data\\models\\app_preferences_model.dart",
+      "accessCount": 2,
+      "lastAccessed": 1775233183673,
+      "type": "file"
+    },
+    {
+      "path": "lib\\features\\expense\\presentation\\provider\\backup_providers.dart",
+      "accessCount": 2,
+      "lastAccessed": 1775233567033,
       "type": "file"
     },
     {
@@ -210,6 +252,48 @@
       "path": "docs\\plans\\2026-04-03-quick-actions-refactor.md",
       "accessCount": 1,
       "lastAccessed": 1775230264617,
+      "type": "file"
+    },
+    {
+      "path": "lib\\core\\theme\\app_colors.dart",
+      "accessCount": 1,
+      "lastAccessed": 1775232742533,
+      "type": "file"
+    },
+    {
+      "path": "docs\\plans\\2026-04-03-settings-backup-system-design.md",
+      "accessCount": 1,
+      "lastAccessed": 1775232756146,
+      "type": "file"
+    },
+    {
+      "path": "docs\\plans\\2026-04-03-settings-backup-system.md",
+      "accessCount": 1,
+      "lastAccessed": 1775232835168,
+      "type": "file"
+    },
+    {
+      "path": "lib\\core\\utils\\hive_bootstrap.dart",
+      "accessCount": 1,
+      "lastAccessed": 1775233117126,
+      "type": "file"
+    },
+    {
+      "path": "lib\\features\\expense\\data\\datasource\\backup_local_datasource.dart",
+      "accessCount": 1,
+      "lastAccessed": 1775233134070,
+      "type": "file"
+    },
+    {
+      "path": "lib\\core\\utils\\background_backup.dart",
+      "accessCount": 1,
+      "lastAccessed": 1775233226691,
+      "type": "file"
+    },
+    {
+      "path": "lib\\core\\utils\\context_extensions.dart",
+      "accessCount": 1,
+      "lastAccessed": 1775233544245,
       "type": "file"
     }
   ],
