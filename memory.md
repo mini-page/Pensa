@@ -29,17 +29,32 @@ XPensa/
 │   │       ├── context_extensions.dart     # BuildContext helpers
 │   │       └── hive_bootstrap.dart         # Hive init + adapter registration
 │   ├── features/
-│   │   └── expense/                        # ← all features currently here
+│   │   ├── accounts/
+│   │   │   └── accounts.dart                   # Re-export barrel for the accounts feature
+│   │   ├── analytics/
+│   │   │   └── analytics.dart                  # Re-export barrel for the analytics/stats feature
+│   │   ├── categories/
+│   │   │   └── categories.dart                 # Re-export barrel for the categories/budget feature
+│   │   ├── settings/
+│   │   │   └── settings.dart                   # Re-export barrel for the settings/prefs feature
+│   │   └── expense/                            # Core expense feature (all data layer lives here)
 │   │       ├── data/
-│   │       │   ├── datasource/             # Raw Hive box read/write
-│   │       │   ├── models/                 # Hive models + adapters
-│   │       │   └── repositories/           # Hive repository implementations
+│   │       │   ├── datasource/                 # Raw Hive box read/write
+│   │       │   ├── models/                     # Hive models + adapters
+│   │       │   └── repositories/               # Hive repository implementations
 │   │       ├── domain/
-│   │       │   └── repositories/           # Abstract repository interfaces
+│   │       │   └── repositories/               # Abstract repository interfaces
 │   │       └── presentation/
-│   │           ├── provider/               # Riverpod providers / notifiers
-│   │           ├── screens/                # Full-page screens
-│   │           └── widgets/                # Reusable UI components
+│   │           ├── provider/                   # Riverpod providers / notifiers
+│   │           ├── screens/                    # Full-page screens + per-screen subdirs
+│   │           │   ├── home/                   # HomeHeader, HomeDateStrip, HomeMiscWidgets
+│   │           │   ├── records_history/        # RecordsFilter, RecordsCards, etc.
+│   │           │   ├── add_expense/            # AddExpenseWidgets
+│   │           │   ├── stats/                  # StatsWidgets
+│   │           │   ├── settings/               # SettingsWidgets
+│   │           │   ├── accounts/               # AccountsWidgets + SliverAccountsTabView
+│   │           │   └── categories/             # CategoriesWidgets
+│   │           └── widgets/                    # Reusable UI components
 │   ├── routes/
 │   │   └── app_routes.dart                 # Centralised navigation helpers
 │   ├── shared/
@@ -204,13 +219,13 @@ All `push` / `pushReplacement` calls are centralised through **`AppRoutes`** in 
 
 | # | Issue | Severity | Location |
 |---|-------|----------|----------|
-| 1 | All domain features (accounts, settings, stats, categories) live under one `expense` feature folder | Medium | `/lib/features/expense/` |
-| 2 | Large screen files with mixed UI + presentation logic | Medium | `home_screen.dart` (826 L), `add_expense_screen.dart` (797 L), `records_history_screen.dart` (789 L) |
+| 1 | All domain features (accounts, settings, stats, categories) live under one `expense` feature folder | ~~Medium~~ Partially resolved: feature-namespace re-export barrels created in `lib/features/accounts/`, `analytics/`, `settings/`, `categories/`. Physical data-layer migration is future work. | `/lib/features/` |
+| 2 | Large screen files with mixed UI + presentation logic | ~~Medium~~ Resolved: all screens ≤373 lines; private widget classes extracted into per-screen `screens/<name>/` subdirs. | — |
 | 3 | Navigation scattered inline across screens (pre-routes refactor) | Resolved | `app_routes.dart` created |
-| 4 | No barrel (`index.dart`) exports → long relative import chains | Low | All directories |
-| 5 | `app_shell.dart` contains `_CustomFloatingNavBar` private class — could be extracted | Low | `app_shell.dart` |
+| 4 | No barrel (`index.dart`) exports → long relative import chains | Resolved | All directories now have barrels |
+| 5 | `app_shell.dart` contains `_CustomFloatingNavBar` private class — could be extracted | Resolved | `FloatingNavBar` → `shared/widgets/floating_nav_bar.dart` |
 | 6 | `placeholder_screen.dart` unused in main navigation | Low | `presentation/screens/` |
-| 7 | No `/assets/images` or `/assets/fonts` subdirectory organisation | Low | `/assets/` |
+| 7 | No `/assets/images` or `/assets/fonts` subdirectory organisation | Resolved | `/assets/images/xpensa_logo.png` created |
 
 ---
 
@@ -230,11 +245,15 @@ All `push` / `pushReplacement` calls are centralised through **`AppRoutes`** in 
   - `routes/`, `shared/widgets/`
 - `FloatingNavBar` + `NavBarItem` extracted from `app_shell.dart` → `lib/shared/widgets/floating_nav_bar.dart`
 - `lib/shared/widgets/` directory created for cross-feature UI components
+- All large screens split into sub-widget directories (see §8 change log)
+- `SliverAccountsTabView` extracted: `accounts_screen.dart` 563→57 L
+- Feature-namespace barrels created: `accounts/`, `analytics/`, `settings/`, `categories/`
+- Assets organised: `assets/images/` for runtime images, `assets/icon/` for build icons
 
-### Recommended Next Steps
-1. **Split large screens** – extract sub-widgets out of `home_screen.dart`, `add_expense_screen.dart`, `records_history_screen.dart` (each >700 lines)
-2. **Separate features** – move `accounts`, `analytics` (stats), `settings`, `categories` into their own feature folders under `/lib/features/`
-3. **Organise assets** – create `/assets/images/`, `/assets/icons/`, `/assets/fonts/` subdirectories; update `pubspec.yaml` and `AppAssets` paths
+### Recommended Next Steps (future sessions)
+1. **Physical feature migration** – move providers and data layer files into the new feature namespaces (`lib/features/accounts/`, etc.) once `flutter analyze` is available to validate import changes
+2. **Recurring subscriptions feature** – create `lib/features/recurring/` for the subscription models, providers, and editor sheet
+3. **Add-expense flow** – consider extracting a `lib/features/transactions/` feature for `add_expense_screen`, `records_history_screen`, and `transaction_search_screen`
 
 ---
 
@@ -323,3 +342,6 @@ All `push` / `pushReplacement` calls are centralised through **`AppRoutes`** in 
 | 2026-04-04 | Split `settings_screen.dart` 446→373 L: extracted `SettingsSectionHeader`, `SettingsCard`, `SettingsTileIcon` | `screens/settings/settings_widgets.dart` |
 | 2026-04-04 | Split `accounts_screen.dart` 563→286 L: extracted `AccountsToolsTabView`, `AccountsPillSwitch`, `AccountsSummaryChip`, `AccountCard`, `EmptyAccountsCard` | `screens/accounts/accounts_widgets.dart` |
 | 2026-04-04 | Split `categories_screen.dart` 490→257 L: extracted `CategoriesPillSwitch`, `CategoryGridCard`, `AddCategoryCard`, `CategoryGridData` | `screens/categories/categories_widgets.dart` |
+| 2026-04-04 | Extracted `SliverAccountsTabView` as ConsumerWidget → `screens/accounts/accounts_widgets.dart`; stripped 14 redundant imports from `accounts_screen.dart`; `accounts_screen.dart` reduced to 57 lines | `accounts_screen.dart`, `accounts/accounts_widgets.dart` |
+| 2026-04-04 | Updated `screens/index.dart` barrel to also export all per-screen sub-widget files | `screens/index.dart` |
+| 2026-04-04 | Created feature-namespace re-export barrels: `lib/features/accounts/accounts.dart`, `analytics/analytics.dart`, `settings/settings.dart`, `categories/categories.dart` | 4 new files |

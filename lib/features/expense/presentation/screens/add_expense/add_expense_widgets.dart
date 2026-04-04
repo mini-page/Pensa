@@ -15,7 +15,7 @@ class AddExpenseTopButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     required this.tooltip,
-    this.color = const Color(0xFF8B99B0),
+    this.color = AppColors.textMuted,
   });
 
   final IconData icon;
