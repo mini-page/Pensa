@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_assets.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
+import '../../../../routes/app_routes.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/expense_model.dart';
 import '../provider/account_providers.dart';
@@ -14,9 +15,6 @@ import '../widgets/amount_visibility.dart';
 import '../widgets/quick_action_bar.dart';
 import '../widgets/transaction_card.dart';
 import '../widgets/ui_feedback.dart';
-import 'add_expense_screen.dart';
-import 'records_history_screen.dart';
-import 'transaction_search_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -79,13 +77,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             currencyFormat: currencyFormat,
             privacyModeEnabled: privacyModeEnabled,
             onMenuPressed: () => Scaffold.of(context).openDrawer(),
-            onSearchPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const TransactionSearchScreen(),
-                ),
-              );
-            },
+            onSearchPressed: () => AppRoutes.pushTransactionSearch(context),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
@@ -242,14 +234,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String? initialCategory,
     DateTime? initialDate,
   }) {
-    return Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => AddExpenseScreen(
-          initialAmount: initialAmount,
-          initialCategory: initialCategory,
-          initialDate: initialDate,
-        ),
-      ),
+    return AppRoutes.pushAddExpense(
+      context,
+      initialAmount: initialAmount,
+      initialCategory: initialCategory,
+      initialDate: initialDate,
     );
   }
 
@@ -257,25 +246,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     BuildContext context,
     ExpenseModel expense,
   ) {
-    return Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => AddExpenseScreen(
-          expenseId: expense.id,
-          initialAmount: expense.amount,
-          initialCategory: expense.category,
-          initialDate: expense.date.toLocal(),
-          initialNote: expense.note,
-          initialAccountId: expense.accountId,
-          initialType: expense.type,
-        ),
-      ),
+    return AppRoutes.pushEditExpense(
+      context,
+      expenseId: expense.id,
+      initialAmount: expense.amount,
+      initialCategory: expense.category,
+      initialDate: expense.date.toLocal(),
+      initialNote: expense.note,
+      initialAccountId: expense.accountId,
+      initialType: expense.type,
     );
   }
 
   Future<void> _openRecordsHistoryScreen(BuildContext context) {
-    return Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const RecordsHistoryScreen()),
-    );
+    return AppRoutes.pushRecordsHistory(context);
   }
 
   void _shiftWindow(int days) {

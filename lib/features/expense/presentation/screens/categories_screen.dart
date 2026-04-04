@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../routes/app_routes.dart';
 import '../../data/models/expense_model.dart';
 import '../provider/budget_providers.dart';
 import '../provider/expense_providers.dart';
@@ -10,7 +11,6 @@ import '../provider/preferences_providers.dart';
 import '../widgets/amount_visibility.dart';
 import '../widgets/budget_editor_sheet.dart';
 import '../widgets/expense_category.dart';
-import 'add_expense_screen.dart';
 
 class CategoriesScreen extends ConsumerStatefulWidget {
   const CategoriesScreen({super.key});
@@ -247,11 +247,10 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   }
 
   Future<void> _openTransactionComposer(String category, TransactionType type) {
-    return Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) =>
-            AddExpenseScreen(initialCategory: category, initialType: type),
-      ),
+    return AppRoutes.pushAddExpense(
+      context,
+      initialCategory: category,
+      initialType: type,
     );
   }
 }

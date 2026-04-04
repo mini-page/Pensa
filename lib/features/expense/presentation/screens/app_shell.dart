@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
+import '../../../../routes/app_routes.dart';
 import '../provider/account_providers.dart';
 import '../widgets/account_editor_sheet.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/power_pill_menu.dart';
 import 'accounts_screen.dart';
-import 'add_expense_screen.dart';
 import 'categories_screen.dart';
 import 'home_screen.dart';
 import 'stats_screen.dart';
@@ -87,9 +87,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   Future<void> _openAddExpenseScreen() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const AddExpenseScreen()));
+    await AppRoutes.pushAddExpense(context);
   }
 
   Future<void> _handleFabPressed() async {
