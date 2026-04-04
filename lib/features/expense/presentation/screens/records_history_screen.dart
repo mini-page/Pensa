@@ -37,6 +37,7 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
     final privacyModeEnabled = ref.watch(privacyModeEnabledProvider);
     final expenses = expenseState.value ?? const <ExpenseModel>[];
     final accounts = accountState.value ?? const <AccountModel>[];
+    final accountMap = {for (final account in accounts) account.id: account};
     final filteredExpenses = _filterExpenses(expenses);
     final groupedExpenses = _groupExpenses(filteredExpenses);
 
@@ -236,7 +237,7 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _accountFilterLabel(accounts),
+                          _accountFilterLabel(accountMap),
                           style: const TextStyle(
                             color: AppColors.textDark,
                             fontWeight: FontWeight.w700,
@@ -294,6 +295,7 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                                         accountLabel: _accountLabelFor(
                                           expense,
                                           accounts,
+                                          accountMap,
                                         ),
                                         maskAmounts: privacyModeEnabled,
                                         onEdit: () => _openEditExpenseScreen(
@@ -372,6 +374,35 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
           }
 
           return true;
+    final now = DateTime.now();
+    final today = DateUtils.dateOnly(now);
+    final weekStart = today.subtract(Duration(days: now.weekday - 1));
+
+    return expenses
+        .where((expense) {
+          final localDate = expense.date.toLocal();
+          final dateOnly = DateUtils.dateOnly(localDate);
+          final matchesAccount =
+              _selectedAccountFilter == _allAccountsKey ||
+              expense.accountId == _selectedAccountFilter;
+
+          if (!matchesAccount) {
+            return false;
+          }
+
+          switch (_selectedFilter) {
+            case RecordsFilter.today:
+              return DateUtils.isSameDay(dateOnly, today);
+            case RecordsFilter.week:
+              return !dateOnly.isBefore(weekStart) && !dateOnly.isAfter(today);
+            case RecordsFilter.month:
+              return dateOnly.year == today.year &&
+                  dateOnly.month == today.month;
+            case RecordsFilter.future:
+              return dateOnly.isAfter(today);
+            case RecordsFilter.all:
+              return true;
+          }
         })
         .toList(growable: false)
       ..sort((left, right) => right.date.compareTo(left.date));
@@ -407,18 +438,12 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
     }
   }
 
-  String _accountFilterLabel(List<AccountModel> accounts) {
+  String _accountFilterLabel(Map<String, AccountModel> accountMap) {
     if (_selectedAccountFilter == _allAccountsKey) {
       return 'All accounts';
     }
 
-    for (final account in accounts) {
-      if (account.id == _selectedAccountFilter) {
-        return account.name;
-      }
-    }
-
-    return 'Archived account';
+    return accountMap[_selectedAccountFilter]?.name ?? 'Archived account';
   }
 
   String _groupLabel(DateTime date) {
@@ -433,18 +458,15 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
     return DateFormat('EEE, d MMM yyyy').format(date);
   }
 
-  String? _accountLabelFor(ExpenseModel expense, List<AccountModel> accounts) {
+  String? _accountLabelFor(
+    ExpenseModel expense,
+    Map<String, AccountModel> accountMap,
+  ) {
     if (expense.accountId == null) {
       return null;
     }
 
-    for (final account in accounts) {
-      if (account.id == expense.accountId) {
-        return account.name;
-      }
-    }
-
-    return 'Archived Account';
+    return accountMap[expense.accountId]?.name ?? 'Archived Account';
   }
 
   Future<void> _openEditExpenseScreen(
