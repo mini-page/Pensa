@@ -315,7 +315,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   String? _accountLabelFor(
-      ExpenseModel expense, Map<String, AccountModel> accountsMap) {
+    ExpenseModel expense,
+    Map<String, AccountModel> accountsMap,
+  ) {
     if (expense.accountId == null) {
       return null;
     }
