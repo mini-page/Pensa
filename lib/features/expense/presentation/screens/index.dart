@@ -10,7 +10,6 @@ export 'home/home_date_strip.dart';
 export 'home/home_header.dart';
 export 'home/home_misc_widgets.dart';
 export 'onboarding_screen.dart';
-export 'placeholder_screen.dart';
 export 'profile_screen.dart';
 export 'records_history_screen.dart';
 export 'records_history/records_cards.dart';

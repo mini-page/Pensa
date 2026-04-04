@@ -228,7 +228,7 @@ All `push` / `pushReplacement` calls are centralised through **`AppRoutes`** in 
 | 3 | Navigation scattered inline across screens (pre-routes refactor) | Resolved | `app_routes.dart` created |
 | 4 | No barrel (`index.dart`) exports → long relative import chains | Resolved | All directories now have barrels |
 | 5 | `app_shell.dart` contains `_CustomFloatingNavBar` private class — could be extracted | Resolved | `FloatingNavBar` → `shared/widgets/floating_nav_bar.dart` |
-| 6 | `placeholder_screen.dart` unused in main navigation | Low | `presentation/screens/` |
+| 6 | `placeholder_screen.dart` unused in main navigation | ~~Low~~ Resolved: moved to `lib/shared/widgets/placeholder_screen.dart` + exported from `shared/widgets/index.dart` | `presentation/screens/` |
 | 7 | No `/assets/images` or `/assets/fonts` subdirectory organisation | Resolved | `/assets/images/xpensa_logo.png` created |
 
 ---
@@ -254,9 +254,10 @@ All `push` / `pushReplacement` calls are centralised through **`AppRoutes`** in 
 - Feature-namespace barrels created: `accounts/`, `analytics/`, `settings/`, `categories/`, `recurring/`, `transactions/`
 - Assets organised: `assets/images/` for runtime images, `assets/icon/` for build icons
 
+- `PlaceholderScreen` promoted to `lib/shared/widgets/placeholder_screen.dart` (cross-feature empty-state UI)
+
 ### Recommended Next Steps (future sessions)
 1. **Physical feature migration** – move providers and data layer files into the new feature namespaces (`lib/features/accounts/`, etc.) once `flutter analyze` is available to validate import changes
-2. **Issue #6** – Remove or wire up `placeholder_screen.dart` (currently unused in navigation)
 
 ---
 
@@ -350,3 +351,4 @@ All `push` / `pushReplacement` calls are centralised through **`AppRoutes`** in 
 | 2026-04-04 | Created feature-namespace re-export barrels: `lib/features/accounts/accounts.dart`, `analytics/analytics.dart`, `settings/settings.dart`, `categories/categories.dart` | 4 new files |
 | 2026-04-04 | Created `lib/features/recurring/recurring.dart` re-export barrel (widgets, providers, model) | 1 new file |
 | 2026-04-04 | Created `lib/features/transactions/transactions.dart` re-export barrel (add-expense + records-history + search screens + providers + model) | 1 new file |
+| 2026-04-04 | Moved `PlaceholderScreen` → `lib/shared/widgets/placeholder_screen.dart`; removed from `screens/` barrel; added to `shared/widgets/index.dart` | 3 files changed |
