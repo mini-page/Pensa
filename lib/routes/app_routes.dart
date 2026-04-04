@@ -114,8 +114,7 @@ abstract final class AppRoutes {
   }) {
     Navigator.of(context).pushReplacement<void, void>(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            AddExpenseScreen(initialAmount: initialAmount, initialNote: initialNote),
+        builder: (_) => AddExpenseScreen(initialAmount: initialAmount, initialNote: initialNote),
       ),
     );
   }
