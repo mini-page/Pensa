@@ -43,6 +43,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final expenses = expenseState.value ?? const <ExpenseModel>[];
     final accounts =
         ref.watch(accountListProvider).value ?? const <AccountModel>[];
+    final accountMap = {for (final account in accounts) account.id: account};
     final stats = ref.watch(statsProvider);
     final privacyModeEnabled = ref.watch(privacyModeEnabledProvider);
     final locale = ref.watch(localeProvider);
@@ -57,10 +58,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       7,
       (index) => _windowStart.add(Duration(days: index)),
     );
-    final selectedExpenses = expenses
-        .where((expense) => _isSameLocalDay(expense.date, _selectedDate))
-        .toList(growable: false)
-      ..sort((left, right) => right.date.compareTo(left.date));
+    final selectedExpenses =
+        expenses
+            .where((expense) => _isSameLocalDay(expense.date, _selectedDate))
+            .toList(growable: false)
+          ..sort((left, right) => right.date.compareTo(left.date));
     final selectedTotal = selectedExpenses.fold<double>(
       0,
       (sum, expense) => sum + expense.signedAmount,
@@ -136,19 +138,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   height: 72,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    children: <double>[50, 100, 200, 500, 1000].map((amount) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: _AmountChip(
-                          label: currencyFormat.format(amount),
-                          onTap: () => _openAddExpenseScreen(
-                            context,
-                            initialAmount: amount,
-                            initialDate: _selectedDate,
-                          ),
-                        ),
-                      );
-                    }).toList(growable: false),
+                    children: <double>[50, 100, 200, 500, 1000]
+                        .map((amount) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: _AmountChip(
+                              label: currencyFormat.format(amount),
+                              onTap: () => _openAddExpenseScreen(
+                                context,
+                                initialAmount: amount,
+                                initialDate: _selectedDate,
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(growable: false),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -216,7 +220,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ...selectedExpenses.map((expense) {
                     return TransactionCard(
                       expense: expense,
-                      accountLabel: _accountLabelFor(expense, accounts),
+                      accountLabel: _accountLabelFor(expense, accountMap),
                       maskAmounts: privacyModeEnabled,
                       onEdit: () => _openEditExpenseScreen(context, expense),
                       onDelete: () => _confirmDeleteExpense(expense),
@@ -313,18 +317,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         date.day == today.day;
   }
 
-  String? _accountLabelFor(ExpenseModel expense, List<AccountModel> accounts) {
+  String? _accountLabelFor(
+    ExpenseModel expense,
+    Map<String, AccountModel> accountMap,
+  ) {
     if (expense.accountId == null) {
       return null;
     }
 
-    for (final account in accounts) {
-      if (account.id == expense.accountId) {
-        return account.name;
-      }
-    }
-
-    return 'Archived Account';
+    return accountMap[expense.accountId]?.name ?? 'Archived Account';
   }
 
   Future<void> _confirmDeleteExpense(ExpenseModel expense) async {
@@ -386,32 +387,34 @@ class _Header extends StatelessWidget {
             children: <Widget>[
               IconButton(
                 onPressed: onMenuPressed,
-                icon: const Icon(Icons.menu_rounded,
-                    color: Colors.white, size: 28),
+                icon: const Icon(
+                  Icons.menu_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  AppAssets.logo,
-                  width: 28,
-                  height: 28,
-                ),
+                child: Image.asset(AppAssets.logo, width: 28, height: 28),
               ),
               const SizedBox(width: 10),
               Text(
                 'XPensa',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  color: Colors.white,
+                  fontStyle: FontStyle.italic,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               const Spacer(),
               IconButton(
                 onPressed: onSearchPressed,
-                icon: const Icon(Icons.search_rounded,
-                    color: Colors.white, size: 28),
+                icon: const Icon(
+                  Icons.search_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
               ),
             ],
           ),
@@ -547,18 +550,22 @@ class _DateStripCard extends StatelessWidget {
           const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: visibleDates.map((date) {
-              final isSelected = DateUtils.isSameDay(date, selectedDate);
-              return Expanded(
-                child: _DayPill(
-                  label:
-                      weekdayFormat.format(date).substring(0, 1).toUpperCase(),
-                  day: date.day.toString().padLeft(2, '0'),
-                  isSelected: isSelected,
-                  onTap: () => onDateSelected(date),
-                ),
-              );
-            }).toList(growable: false),
+            children: visibleDates
+                .map((date) {
+                  final isSelected = DateUtils.isSameDay(date, selectedDate);
+                  return Expanded(
+                    child: _DayPill(
+                      label: weekdayFormat
+                          .format(date)
+                          .substring(0, 1)
+                          .toUpperCase(),
+                      day: date.day.toString().padLeft(2, '0'),
+                      isSelected: isSelected,
+                      onTap: () => onDateSelected(date),
+                    ),
+                  );
+                })
+                .toList(growable: false),
           ),
           const SizedBox(height: 16),
           Container(
@@ -661,8 +668,9 @@ class _DayPill extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color:
-                    isSelected ? AppColors.accentLimeDark : AppColors.textMuted,
+                color: isSelected
+                    ? AppColors.accentLimeDark
+                    : AppColors.textMuted,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -670,8 +678,9 @@ class _DayPill extends StatelessWidget {
             Text(
               day,
               style: TextStyle(
-                color:
-                    isSelected ? AppColors.accentLimeDark : AppColors.textDark,
+                color: isSelected
+                    ? AppColors.accentLimeDark
+                    : AppColors.textDark,
                 fontWeight: FontWeight.w900,
                 fontSize: 18,
               ),
