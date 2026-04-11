@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../data/models/expense_model.dart';
 
-/// Extension on [TransactionType] to check if it represents income.
+/// Extension on [TransactionType] for quick type checks.
 extension TransactionTypeX on TransactionType {
   bool get isIncome => this == TransactionType.income;
+  bool get isTransfer => this == TransactionType.transfer;
 }
 
 /// Small circular icon button used in the AddExpense top bar.
@@ -178,36 +179,45 @@ class AddExpenseSelectionCapsule extends StatelessWidget {
   }
 }
 
-/// A single keypad button (digit, decimal point, or confirm).
+
+
 class AddExpenseKeypadButton extends StatelessWidget {
   const AddExpenseKeypadButton({
     super.key,
     required this.label,
     required this.onTap,
-    this.isPrimary = false,
+    this.isBackspace = false,
   });
 
   final String label;
   final VoidCallback onTap;
-  final bool isPrimary;
+
+  /// When true the button renders a backspace icon instead of [label].
+  final bool isBackspace;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isPrimary ? const Color(0xFF383838) : AppColors.surfaceLight,
+      color: AppColors.surfaceLight,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isPrimary ? Colors.white : AppColors.textDark,
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          child: isBackspace
+              ? const Icon(
+                  Icons.backspace_outlined,
+                  color: AppColors.textDark,
+                  size: 26,
+                )
+              : Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.textDark,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
         ),
       ),
     );

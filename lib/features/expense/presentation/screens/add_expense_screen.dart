@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../shared/widgets/app_button.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/expense_model.dart';
@@ -41,10 +42,12 @@ class AddExpenseScreen extends ConsumerStatefulWidget {
 class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   late final TextEditingController _noteController;
   late String _amountText;
-  late String _selectedCategory;
+  late String _selectedExpenseCategory;
+  late String _selectedIncomeCategory;
   late DateTime _selectedDate;
   late TransactionType _selectedType;
   String? _selectedAccountId;
+  String? _toAccountId;
   late bool _hasExplicitAccountChoice;
 
   @override
@@ -67,8 +70,14 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     );
     _selectedType = widget.initialType;
     _amountText = widget.initialAmount?.toStringAsFixed(0) ?? '0';
-    _selectedCategory =
-        widget.initialCategory ?? _categoriesForType(_selectedType).first.name;
+    _selectedExpenseCategory = (_selectedType == TransactionType.expense
+            ? widget.initialCategory
+            : null) ??
+        expenseCategories.first.name;
+    _selectedIncomeCategory = (_selectedType == TransactionType.income
+            ? widget.initialCategory
+            : null) ??
+        incomeCategories.first.name;
     _selectedAccountId = widget.initialAccountId;
     _hasExplicitAccountChoice =
         widget.initialAccountId != null || widget.isEditing;
@@ -97,15 +106,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       });
     }
 
-    final categories = _categoriesForType(_selectedType);
-    if (!categories.any((category) => category.name == _selectedCategory)) {
-      _selectedCategory = categories.first.name;
-    }
-    final selectedCategory = resolveCategory(
-      _selectedCategory,
-      income: _selectedType.isIncome,
-    );
+    final selectedExpenseCat = resolveExpenseCategory(_selectedExpenseCategory);
+    final selectedIncomeCat = resolveIncomeCategory(_selectedIncomeCategory);
     final selectedAccount = _resolveSelectedAccount(accounts);
+    final toAccount = _resolveToAccount(accounts);
     final amount = double.tryParse(_amountText) ?? 0;
     final locale = ref.watch(localeProvider);
     final symbol = ref.watch(currencySymbolProvider);
@@ -128,66 +132,79 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     tooltip: 'Close',
                   ),
                   const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F6FA),
-                      borderRadius: BorderRadius.circular(22),
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        AddExpenseModeTab(
-                          label: 'Expense',
-                          isSelected: _selectedType == TransactionType.expense,
-                          onTap: () => _switchType(TransactionType.expense),
+                  if (_selectedType == TransactionType.transfer)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F6FA),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: const Text(
+                        'Transfer',
+                        style: TextStyle(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w800,
                         ),
-                        AddExpenseModeTab(
-                          label: 'Income',
-                          isSelected: _selectedType == TransactionType.income,
-                          onTap: () => _switchType(TransactionType.income),
-                        ),
-                      ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F6FA),
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          AddExpenseModeTab(
+                            label: 'Expense',
+                            isSelected: _selectedType == TransactionType.expense,
+                            onTap: () => _switchType(TransactionType.expense),
+                          ),
+                          AddExpenseModeTab(
+                            label: 'Income',
+                            isSelected: _selectedType == TransactionType.income,
+                            onTap: () => _switchType(TransactionType.income),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   const Spacer(),
                   AddExpenseTopButton(
-                    icon: Icons.calendar_month_rounded,
-                    color: const Color(0xFF45D19A),
-                    onTap: _pickDate,
-                    tooltip: 'Select date',
+                    icon: _selectedType == TransactionType.transfer
+                        ? Icons.sync_alt_rounded
+                        : Icons.sync_alt_outlined,
+                    color: _selectedType == TransactionType.transfer
+                        ? AppColors.primaryBlue
+                        : const Color(0xFF45D19A),
+                    onTap: _toggleTransferMode,
+                    tooltip: 'Transfer between accounts',
                   ),
                 ],
               ),
               const SizedBox(height: 28),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        amountLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _selectedType.isIncome
-                              ? AppColors.success
+              Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    amountLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _selectedType.isIncome
+                          ? AppColors.success
+                          : _selectedType.isTransfer
+                              ? AppColors.primaryBlue
                               : AppColors.textDark,
-                          fontSize: 52,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -1.5,
-                        ),
-                      ),
+                      fontSize: 52,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.5,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  AddExpenseTopButton(
-                    icon: Icons.backspace_outlined,
-                    onTap: _backspace,
-                    tooltip: 'Backspace',
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 14),
               Container(
@@ -216,38 +233,78 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   AddExpenseInfoCapsule(
                     icon: Icons.today_outlined,
                     label: DateFormat('EEE, d MMM').format(_selectedDate),
                     onTap: _pickDate,
                   ),
+                  const SizedBox(width: 8),
                   AddExpenseInfoCapsule(
                     icon: Icons.schedule_rounded,
                     label: DateFormat('HH:mm').format(_selectedDate),
                     onTap: _pickTime,
                   ),
-                  AddExpenseSelectionCapsule(
-                    icon: selectedCategory.icon,
-                    iconColor: selectedCategory.color,
-                    label: selectedCategory.name,
-                    background: selectedCategory.color.withValues(alpha: 0.13),
-                    onTap: _pickCategory,
-                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
                   AddExpenseSelectionCapsule(
                     icon: selectedAccount == null
                         ? Icons.account_balance_wallet_outlined
                         : resolveAccountIcon(selectedAccount.iconKey),
                     iconColor: AppColors.primaryBlue,
-                    label: selectedAccount?.name ?? 'No account',
                     background: AppColors.lightBlueBg,
-                    onTap:
-                        accounts.isEmpty ? null : () => _pickAccount(accounts),
+                    label: selectedAccount?.name ?? 'No account',
+                    onTap: accounts.isNotEmpty
+                        ? () => _pickAccount(accounts)
+                        : null,
                   ),
+                  if (_selectedType == TransactionType.transfer) ...<Widget>[
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Icon(
+                        Icons.sync_alt_rounded,
+                        color: AppColors.primaryBlue,
+                        size: 20,
+                      ),
+                    ),
+                    AddExpenseSelectionCapsule(
+                      icon: toAccount == null
+                          ? Icons.account_balance_wallet_outlined
+                          : resolveAccountIcon(toAccount.iconKey),
+                      iconColor: AppColors.primaryBlue,
+                      background: AppColors.lightBlueBg,
+                      label: toAccount?.name ?? 'No account',
+                      onTap: accounts.isNotEmpty
+                          ? () => _pickToAccount(accounts)
+                          : null,
+                    ),
+                  ] else ...<Widget>[
+                    const SizedBox(width: 8),
+                    if (_selectedType == TransactionType.income)
+                      AddExpenseSelectionCapsule(
+                        icon: selectedIncomeCat.icon,
+                        iconColor: selectedIncomeCat.color,
+                        background:
+                            selectedIncomeCat.color.withValues(alpha: 0.15),
+                        label: selectedIncomeCat.name,
+                        onTap: _tapIncomeCategory,
+                      )
+                    else
+                      AddExpenseSelectionCapsule(
+                        icon: selectedExpenseCat.icon,
+                        iconColor: selectedExpenseCat.color,
+                        background:
+                            selectedExpenseCat.color.withValues(alpha: 0.15),
+                        label: selectedExpenseCat.name,
+                        onTap: _tapExpenseCategory,
+                      ),
+                  ],
                 ],
               ),
               const Spacer(),
@@ -257,7 +314,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 1.05,
+                childAspectRatio: 1.3,
                 children: <Widget>[
                   for (final key in <String>[
                     '1',
@@ -272,23 +329,27 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                     '.',
                     '0',
                   ])
-                    AddExpenseKeypadButton(label: key, onTap: () => _appendValue(key)),
+                    AddExpenseKeypadButton(
+                      label: key,
+                      onTap: () => _appendValue(key),
+                    ),
                   AddExpenseKeypadButton(
-                    label: '✓',
-                    isPrimary: true,
-                    onTap: _saveExpense,
+                    label: '',
+                    isBackspace: true,
+                    onTap: _backspace,
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              AppButton(
+                label: 'Save',
+                onPressed: _saveExpense,
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  List<ExpenseCategory> _categoriesForType(TransactionType type) {
-    return type.isIncome ? incomeCategories : expenseCategories;
   }
 
   AccountModel? _resolveSelectedAccount(List<AccountModel> accounts) {
@@ -345,14 +406,26 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     if (_selectedType == type) {
       return;
     }
-    final categories = _categoriesForType(type);
     setState(() {
       _selectedType = type;
-      _selectedCategory = categories.first.name;
     });
   }
 
-  Future<void> _pickCategory() async {
+  Future<void> _tapExpenseCategory() async {
+    if (_selectedType != TransactionType.expense) {
+      setState(() => _selectedType = TransactionType.expense);
+    }
+    await _pickExpenseCategory();
+  }
+
+  Future<void> _tapIncomeCategory() async {
+    if (_selectedType != TransactionType.income) {
+      setState(() => _selectedType = TransactionType.income);
+    }
+    await _pickIncomeCategory();
+  }
+
+  Future<void> _pickExpenseCategory() async {
     final selected = await showModalBottomSheet<ExpenseCategory>(
       context: context,
       backgroundColor: Colors.white,
@@ -360,7 +433,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (context) {
-        final categories = _categoriesForType(_selectedType);
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
@@ -376,13 +448,11 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    _selectedType.isIncome
-                        ? 'Select income category'
-                        : 'Select expense category',
-                    style: const TextStyle(
+                    'Select expense category',
+                    style: TextStyle(
                       color: Color(0xFF111A33),
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
@@ -390,7 +460,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                ...categories.map((category) {
+                ...expenseCategories.map((category) {
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
@@ -401,7 +471,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       category.name,
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
-                    trailing: category.name == _selectedCategory
+                    trailing: category.name == _selectedExpenseCategory
                         ? const Icon(
                             Icons.check_rounded,
                             color: Color(0xFF0A6BE8),
@@ -419,7 +489,74 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     if (selected == null) {
       return;
     }
-    setState(() => _selectedCategory = selected.name);
+    setState(() => _selectedExpenseCategory = selected.name);
+  }
+
+  Future<void> _pickIncomeCategory() async {
+    final selected = await showModalBottomSheet<ExpenseCategory>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD7DFEA),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Select income category',
+                    style: TextStyle(
+                      color: Color(0xFF111A33),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...incomeCategories.map((category) {
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: category.color.withValues(alpha: 0.15),
+                      child: Icon(category.icon, color: category.color),
+                    ),
+                    title: Text(
+                      category.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    trailing: category.name == _selectedIncomeCategory
+                        ? const Icon(
+                            Icons.check_rounded,
+                            color: Color(0xFF0A6BE8),
+                          )
+                        : null,
+                    onTap: () => Navigator.of(context).pop(category),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (selected == null) {
+      return;
+    }
+    setState(() => _selectedIncomeCategory = selected.name);
   }
 
   Future<void> _pickAccount(List<AccountModel> accounts) async {
@@ -570,11 +707,38 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       return;
     }
 
-    if (widget.isEditing) {
+    if (_selectedType == TransactionType.transfer) {
+      final toAccount = _resolveToAccount(accounts);
+      if (effectiveAccountId == null || toAccount == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Select both source and destination accounts.'),
+          ),
+        );
+        return;
+      }
+      if (effectiveAccountId == toAccount.id) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Source and destination accounts must be different.'),
+          ),
+        );
+        return;
+      }
+      await ref.read(expenseControllerProvider).addTransfer(
+            amount: amount,
+            fromAccountId: effectiveAccountId,
+            toAccountId: toAccount.id,
+            date: _selectedDate,
+            note: _noteController.text,
+          );
+    } else if (widget.isEditing) {
       await ref.read(expenseControllerProvider).updateExpense(
             id: widget.expenseId!,
             amount: amount,
-            category: _selectedCategory,
+            category: _selectedType.isIncome
+                ? _selectedIncomeCategory
+                : _selectedExpenseCategory,
             date: _selectedDate,
             note: _noteController.text,
             accountId: effectiveAccountId,
@@ -583,7 +747,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     } else {
       await ref.read(expenseControllerProvider).addExpense(
             amount: amount,
-            category: _selectedCategory,
+            category: _selectedType.isIncome
+                ? _selectedIncomeCategory
+                : _selectedExpenseCategory,
             date: _selectedDate,
             note: _noteController.text,
             accountId: effectiveAccountId,
@@ -594,5 +760,99 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       return;
     }
     Navigator.of(context).pop();
+  }
+
+  void _toggleTransferMode() {
+    setState(() {
+      _selectedType = _selectedType == TransactionType.transfer
+          ? TransactionType.expense
+          : TransactionType.transfer;
+    });
+  }
+
+  AccountModel? _resolveToAccount(List<AccountModel> accounts) {
+    if (accounts.isEmpty || _toAccountId == null) {
+      return null;
+    }
+    for (final account in accounts) {
+      if (account.id == _toAccountId) {
+        return account;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _pickToAccount(List<AccountModel> accounts) async {
+    final selected = await showModalBottomSheet<AccountModel?>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD7DFEA),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Transfer to account',
+                    style: TextStyle(
+                      color: Color(0xFF111A33),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...accounts.map((account) {
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: CircleAvatar(
+                      backgroundColor: const Color(0xFFEFF5FF),
+                      child: Icon(
+                        resolveAccountIcon(account.iconKey),
+                        color: const Color(0xFF0A6BE8),
+                      ),
+                    ),
+                    title: Text(
+                      account.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    trailing: account.id == _toAccountId
+                        ? const Icon(
+                            Icons.check_rounded,
+                            color: Color(0xFF0A6BE8),
+                          )
+                        : null,
+                    onTap: () => Navigator.of(context).pop(account),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null) {
+      return;
+    }
+
+    setState(() {
+      _toAccountId = selected.id;
+    });
   }
 }
