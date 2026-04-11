@@ -23,6 +23,7 @@ abstract final class AppRoutes {
     DateTime? initialDate,
     String? initialNote,
     String? initialAccountId,
+    String? initialToAccountId,
     TransactionType initialType = TransactionType.expense,
   }) {
     return Navigator.of(context).push<void>(
@@ -33,6 +34,7 @@ abstract final class AppRoutes {
           initialDate: initialDate,
           initialNote: initialNote,
           initialAccountId: initialAccountId,
+          initialToAccountId: initialToAccountId,
           initialType: initialType,
         ),
       ),
@@ -48,6 +50,7 @@ abstract final class AppRoutes {
     required DateTime initialDate,
     required String initialNote,
     String? initialAccountId,
+    String? initialToAccountId,
     TransactionType initialType = TransactionType.expense,
   }) {
     return Navigator.of(context).push<void>(
@@ -59,6 +62,7 @@ abstract final class AppRoutes {
           initialDate: initialDate,
           initialNote: initialNote,
           initialAccountId: initialAccountId,
+          initialToAccountId: initialToAccountId,
           initialType: initialType,
         ),
       ),
@@ -114,7 +118,8 @@ abstract final class AppRoutes {
   }) {
     Navigator.of(context).pushReplacement<void, void>(
       MaterialPageRoute<void>(
-        builder: (_) => AddExpenseScreen(initialAmount: initialAmount, initialNote: initialNote),
+        builder: (_) => AddExpenseScreen(
+            initialAmount: initialAmount, initialNote: initialNote),
       ),
     );
   }

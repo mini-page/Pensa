@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_colors.dart';
 import '../../../data/models/expense_model.dart';
 
-/// Extension on [TransactionType] for quick type checks.
 extension TransactionTypeX on TransactionType {
   bool get isIncome => this == TransactionType.income;
   bool get isTransfer => this == TransactionType.transfer;
 }
 
-/// Small circular icon button used in the AddExpense top bar.
 class AddExpenseTopButton extends StatelessWidget {
   const AddExpenseTopButton({
     super.key,
@@ -31,17 +29,13 @@ class AddExpenseTopButton extends StatelessWidget {
       shape: const CircleBorder(),
       child: Tooltip(
         message: tooltip,
-        child: Semantics(
-          button: true,
-          label: tooltip,
-          child: InkWell(
-            onTap: onTap,
-            customBorder: const CircleBorder(),
-            child: SizedBox(
-              width: 42,
-              height: 42,
-              child: Icon(icon, color: color),
-            ),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(icon, color: color),
           ),
         ),
       ),
@@ -49,7 +43,6 @@ class AddExpenseTopButton extends StatelessWidget {
   }
 }
 
-/// Expense / Income mode toggle tab.
 class AddExpenseModeTab extends StatelessWidget {
   const AddExpenseModeTab({
     super.key,
@@ -64,19 +57,25 @@ class AddExpenseModeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? AppColors.textDark : AppColors.textMuted,
-            fontWeight: FontWeight.w800,
+    return Material(
+      color: isSelected ? Colors.white : Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          child: Center(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isSelected ? AppColors.textDark : AppColors.textMuted,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
           ),
         ),
       ),
@@ -84,7 +83,6 @@ class AddExpenseModeTab extends StatelessWidget {
   }
 }
 
-/// Read-only capsule showing a date/time field (tappable to open a picker).
 class AddExpenseInfoCapsule extends StatelessWidget {
   const AddExpenseInfoCapsule({
     super.key,
@@ -101,22 +99,24 @@ class AddExpenseInfoCapsule extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: const Color(0xFFF7F8FB),
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Icon(icon, size: 18, color: AppColors.textMuted),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.textDark,
-                  fontWeight: FontWeight.w700,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textDark,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
@@ -127,7 +127,6 @@ class AddExpenseInfoCapsule extends StatelessWidget {
   }
 }
 
-/// Tappable capsule showing the selected category or account.
 class AddExpenseSelectionCapsule extends StatelessWidget {
   const AddExpenseSelectionCapsule({
     super.key,
@@ -148,19 +147,17 @@ class AddExpenseSelectionCapsule extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: background,
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           child: Row(
-            mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Icon(icon, size: 16, color: iconColor),
-              const SizedBox(width: 6),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 100),
+              Icon(icon, size: 18, color: iconColor),
+              const SizedBox(width: 10),
+              Expanded(
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
@@ -171,6 +168,14 @@ class AddExpenseSelectionCapsule extends StatelessWidget {
                   ),
                 ),
               ),
+              if (onTap != null) ...<Widget>[
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.expand_more_rounded,
+                  color: iconColor.withValues(alpha: 0.78),
+                  size: 18,
+                ),
+              ],
             ],
           ),
         ),
@@ -179,45 +184,47 @@ class AddExpenseSelectionCapsule extends StatelessWidget {
   }
 }
 
-
-
 class AddExpenseKeypadButton extends StatelessWidget {
   const AddExpenseKeypadButton({
     super.key,
-    required this.label,
     required this.onTap,
-    this.isBackspace = false,
+    required this.child,
+    this.backgroundColor = Colors.white,
+    this.foregroundColor = AppColors.textDark,
+    this.isEnabled = true,
   });
 
-  final String label;
-  final VoidCallback onTap;
-
-  /// When true the button renders a backspace icon instead of [label].
-  final bool isBackspace;
+  final VoidCallback? onTap;
+  final Widget child;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final bool isEnabled;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedForeground =
+        isEnabled ? foregroundColor : foregroundColor.withValues(alpha: 0.34);
+    final resolvedBackground =
+        isEnabled ? backgroundColor : backgroundColor.withValues(alpha: 0.45);
+
     return Material(
-      color: AppColors.surfaceLight,
-      borderRadius: BorderRadius.circular(20),
+      color: resolvedBackground,
+      borderRadius: BorderRadius.circular(26),
+      shadowColor: AppColors.cardShadow,
+      elevation: isEnabled ? 2 : 0,
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Center(
-          child: isBackspace
-              ? const Icon(
-                  Icons.backspace_outlined,
-                  color: AppColors.textDark,
-                  size: 26,
-                )
-              : Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.textDark,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+        onTap: isEnabled ? onTap : null,
+        borderRadius: BorderRadius.circular(26),
+        child: DefaultTextStyle(
+          style: TextStyle(
+            color: resolvedForeground,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+          ),
+          child: IconTheme(
+            data: IconThemeData(color: resolvedForeground, size: 28),
+            child: Center(child: child),
+          ),
         ),
       ),
     );

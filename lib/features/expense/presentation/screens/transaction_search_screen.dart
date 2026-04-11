@@ -130,6 +130,7 @@ class _TransactionSearchScreenState
       initialDate: expense.date.toLocal(),
       initialNote: expense.note,
       initialAccountId: expense.accountId,
+      initialToAccountId: expense.toAccountId,
       initialType: expense.type,
     );
   }

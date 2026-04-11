@@ -21,8 +21,8 @@ final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
 
 final expenseListProvider =
     AsyncNotifierProvider<ExpenseListNotifier, List<ExpenseModel>>(
-      ExpenseListNotifier.new,
-    );
+  ExpenseListNotifier.new,
+);
 
 final expenseControllerProvider = Provider<ExpenseController>((ref) {
   return ExpenseController(ref);
@@ -143,6 +143,7 @@ class ExpenseController {
     required DateTime date,
     required String note,
     String? accountId,
+    String? toAccountId,
     TransactionType type = TransactionType.expense,
   }) async {
     final existingExpense = await _findExpenseById(id);
@@ -157,6 +158,8 @@ class ExpenseController {
       note: note.trim(),
       accountId: accountId,
       clearAccountId: accountId == null,
+      toAccountId: type == TransactionType.transfer ? toAccountId : null,
+      clearToAccountId: type != TransactionType.transfer || toAccountId == null,
       type: type,
     );
 
@@ -267,9 +270,8 @@ class ExpenseController {
 
   Future<ExpenseModel?> _findExpenseById(String id) async {
     final currentExpenses = _ref.read(expenseListProvider).value;
-    final cachedExpense = currentExpenses
-        ?.where((expense) => expense.id == id)
-        .firstOrNull;
+    final cachedExpense =
+        currentExpenses?.where((expense) => expense.id == id).firstOrNull;
     if (cachedExpense != null) {
       return cachedExpense;
     }

@@ -104,23 +104,24 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                             'The transaction history is not available right now.',
                       )
                     : expenseState.isLoading && expenses.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : filteredExpenses.isEmpty
-                    ? const RecordsStateCard(
-                        title: 'No matching transactions',
-                        message: 'Try another filter or add a new expense.',
-                      )
-                    : RecordsExpenseList(
-                        groupedExpenses: groupedExpenses,
-                        accounts: accounts,
-                        privacyModeEnabled: privacyModeEnabled,
-                        groupLabel: _groupLabel,
-                        accountLabelFor: _accountLabelFor,
-                        onEdit: (expense) =>
-                            _openEditExpenseScreen(context, expense),
-                        onDelete: (expense) =>
-                            _confirmDeleteExpense(context, ref, expense),
-                      ),
+                        ? const Center(child: CircularProgressIndicator())
+                        : filteredExpenses.isEmpty
+                            ? const RecordsStateCard(
+                                title: 'No matching transactions',
+                                message:
+                                    'Try another filter or add a new expense.',
+                              )
+                            : RecordsExpenseList(
+                                groupedExpenses: groupedExpenses,
+                                accounts: accounts,
+                                privacyModeEnabled: privacyModeEnabled,
+                                groupLabel: _groupLabel,
+                                accountLabelFor: _accountLabelFor,
+                                onEdit: (expense) =>
+                                    _openEditExpenseScreen(context, expense),
+                                onDelete: (expense) => _confirmDeleteExpense(
+                                    context, ref, expense),
+                              ),
               ),
             ],
           ),
@@ -134,33 +135,29 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
     final today = DateUtils.dateOnly(now);
     final weekStart = today.subtract(Duration(days: now.weekday - 1));
 
-    return expenses
-        .where((expense) {
-          final localDate = expense.date.toLocal();
-          final dateOnly = DateUtils.dateOnly(localDate);
-          final matchesAccount =
-              _selectedAccountFilter == _allAccountsKey ||
-              expense.accountId == _selectedAccountFilter;
+    return expenses.where((expense) {
+      final localDate = expense.date.toLocal();
+      final dateOnly = DateUtils.dateOnly(localDate);
+      final matchesAccount = _selectedAccountFilter == _allAccountsKey ||
+          expense.accountId == _selectedAccountFilter;
 
-          if (!matchesAccount) {
-            return false;
-          }
+      if (!matchesAccount) {
+        return false;
+      }
 
-          switch (_selectedFilter) {
-            case RecordsFilter.today:
-              return DateUtils.isSameDay(dateOnly, today);
-            case RecordsFilter.week:
-              return !dateOnly.isBefore(weekStart) && !dateOnly.isAfter(today);
-            case RecordsFilter.month:
-              return dateOnly.year == today.year &&
-                  dateOnly.month == today.month;
-            case RecordsFilter.future:
-              return dateOnly.isAfter(today);
-            case RecordsFilter.all:
-              return true;
-          }
-        })
-        .toList(growable: false)
+      switch (_selectedFilter) {
+        case RecordsFilter.today:
+          return DateUtils.isSameDay(dateOnly, today);
+        case RecordsFilter.week:
+          return !dateOnly.isBefore(weekStart) && !dateOnly.isAfter(today);
+        case RecordsFilter.month:
+          return dateOnly.year == today.year && dateOnly.month == today.month;
+        case RecordsFilter.future:
+          return dateOnly.isAfter(today);
+        case RecordsFilter.all:
+          return true;
+      }
+    }).toList(growable: false)
       ..sort((left, right) => right.date.compareTo(left.date));
   }
 
@@ -237,6 +234,7 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
       initialDate: expense.date.toLocal(),
       initialNote: expense.note,
       initialAccountId: expense.accountId,
+      initialToAccountId: expense.toAccountId,
       initialType: expense.type,
     );
   }

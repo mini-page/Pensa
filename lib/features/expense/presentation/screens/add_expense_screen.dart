@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../shared/widgets/app_button.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/expense_model.dart';
@@ -12,6 +11,7 @@ import '../provider/preferences_providers.dart';
 import '../widgets/account_icons.dart';
 import '../widgets/expense_category.dart';
 import 'add_expense/add_expense_widgets.dart';
+import 'add_expense/amount_expression.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
   const AddExpenseScreen({
@@ -22,6 +22,7 @@ class AddExpenseScreen extends ConsumerStatefulWidget {
     this.initialDate,
     this.initialNote,
     this.initialAccountId,
+    this.initialToAccountId,
     this.initialType = TransactionType.expense,
   });
 
@@ -31,6 +32,7 @@ class AddExpenseScreen extends ConsumerStatefulWidget {
   final DateTime? initialDate;
   final String? initialNote;
   final String? initialAccountId;
+  final String? initialToAccountId;
   final TransactionType initialType;
 
   bool get isEditing => expenseId != null;
@@ -41,7 +43,8 @@ class AddExpenseScreen extends ConsumerStatefulWidget {
 
 class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   late final TextEditingController _noteController;
-  late String _amountText;
+  late final FocusNode _noteFocusNode;
+  late String _amountExpression;
   late String _selectedExpenseCategory;
   late String _selectedIncomeCategory;
   late DateTime _selectedDate;
@@ -49,6 +52,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   String? _selectedAccountId;
   String? _toAccountId;
   late bool _hasExplicitAccountChoice;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -61,6 +65,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         seedDate.second == 0 &&
         seedDate.millisecond == 0 &&
         seedDate.microsecond == 0;
+
     _selectedDate = DateTime(
       seedDate.year,
       seedDate.month,
@@ -69,7 +74,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       shouldInjectCurrentTime ? now.minute : seedDate.minute,
     );
     _selectedType = widget.initialType;
-    _amountText = widget.initialAmount?.toStringAsFixed(0) ?? '0';
+    _amountExpression = normalizeAmountSeed(widget.initialAmount);
     _selectedExpenseCategory = (_selectedType == TransactionType.expense
             ? widget.initialCategory
             : null) ??
@@ -79,277 +84,410 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             : null) ??
         incomeCategories.first.name;
     _selectedAccountId = widget.initialAccountId;
+    _toAccountId = widget.initialToAccountId;
     _hasExplicitAccountChoice =
         widget.initialAccountId != null || widget.isEditing;
     _noteController = TextEditingController(text: widget.initialNote ?? '');
+    _noteFocusNode = FocusNode()..addListener(_handleNoteFocusChanged);
   }
 
   @override
   void dispose() {
+    _noteFocusNode
+      ..removeListener(_handleNoteFocusChanged)
+      ..dispose();
     _noteController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final accountState = ref.watch(accountListProvider);
-    final accounts = accountState.value ?? const <AccountModel>[];
-    if (!_hasExplicitAccountChoice && accounts.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || _hasExplicitAccountChoice) {
-          return;
-        }
-        setState(() {
-          _selectedAccountId = accounts.first.id;
-          _hasExplicitAccountChoice = true;
-        });
-      });
-    }
+    final accounts =
+        ref.watch(accountListProvider).value ?? const <AccountModel>[];
+    _queueDefaultSelections(accounts);
 
     final selectedExpenseCat = resolveExpenseCategory(_selectedExpenseCategory);
     final selectedIncomeCat = resolveIncomeCategory(_selectedIncomeCategory);
     final selectedAccount = _resolveSelectedAccount(accounts);
     final toAccount = _resolveToAccount(accounts);
-    final amount = double.tryParse(_amountText) ?? 0;
+    final amountState = evaluateAmountExpression(_amountExpression);
     final locale = ref.watch(localeProvider);
     final symbol = ref.watch(currencySymbolProvider);
-
-    final amountLabel =
-        amount <= 0 ? '$symbol' '0' : _formatAmount(amount, locale, symbol);
+    final amountLabel = amountState.previewAmount > 0
+        ? _formatAmount(amountState.previewAmount, locale, symbol)
+        : '$symbol${0.toStringAsFixed(0)}';
+    final noteHintText = amountState.errorText == 'Amount must stay above zero.'
+        ? 'Amount must stay above zero'
+        : 'Add note';
+    final showNoteIcon = noteHintText == 'Add note';
+    final showNotePlaceholder =
+        _noteController.text.isEmpty && !_noteFocusNode.hasFocus;
+    final canSubmit = _canSubmit(
+      amountState: amountState,
+      selectedAccount: selectedAccount,
+      toAccount: toAccount,
+    );
 
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          child: Column(
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  AddExpenseTopButton(
-                    icon: Icons.close_rounded,
-                    onTap: () => Navigator.of(context).pop(),
-                    tooltip: 'Close',
-                  ),
-                  const Spacer(),
-                  if (_selectedType == TransactionType.transfer)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F6FA),
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: const Text(
-                        'Transfer',
-                        style: TextStyle(
-                          color: AppColors.primaryBlue,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F6FA),
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final viewInsets = MediaQuery.viewInsetsOf(context);
+            final minHeight = constraints.maxHeight - viewInsets.bottom;
+
+            return AnimatedPadding(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.only(bottom: viewInsets.bottom),
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: minHeight),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Row(
                         children: <Widget>[
-                          AddExpenseModeTab(
-                            label: 'Expense',
-                            isSelected: _selectedType == TransactionType.expense,
-                            onTap: () => _switchType(TransactionType.expense),
+                          AddExpenseTopButton(
+                            icon: Icons.close_rounded,
+                            onTap: () => Navigator.of(context).pop(),
+                            tooltip: 'Close',
                           ),
-                          AddExpenseModeTab(
-                            label: 'Income',
-                            isSelected: _selectedType == TransactionType.income,
-                            onTap: () => _switchType(TransactionType.income),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF4F6FA),
+                                borderRadius: BorderRadius.circular(22),
+                              ),
+                              child: Row(
+                                children: <Widget>[
+                                  Expanded(
+                                    child: AddExpenseModeTab(
+                                      label: 'Expense',
+                                      isSelected: _selectedType ==
+                                          TransactionType.expense,
+                                      onTap: () =>
+                                          _switchType(TransactionType.expense),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: AddExpenseModeTab(
+                                      label: 'Income',
+                                      isSelected: _selectedType ==
+                                          TransactionType.income,
+                                      onTap: () =>
+                                          _switchType(TransactionType.income),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: AddExpenseModeTab(
+                                      label: 'Transfer',
+                                      isSelected: _selectedType ==
+                                          TransactionType.transfer,
+                                      onTap: () =>
+                                          _switchType(TransactionType.transfer),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    ),
-                  const Spacer(),
-                  AddExpenseTopButton(
-                    icon: _selectedType == TransactionType.transfer
-                        ? Icons.sync_alt_rounded
-                        : Icons.sync_alt_outlined,
-                    color: _selectedType == TransactionType.transfer
-                        ? AppColors.primaryBlue
-                        : const Color(0xFF45D19A),
-                    onTap: _toggleTransferMode,
-                    tooltip: 'Transfer between accounts',
-                  ),
-                ],
-              ),
-              const SizedBox(height: 28),
-              Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    amountLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: _selectedType.isIncome
-                          ? AppColors.success
-                          : _selectedType.isTransfer
-                              ? AppColors.primaryBlue
-                              : AppColors.textDark,
-                      fontSize: 52,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -1.5,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF7F8FB),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: TextField(
-                  controller: _noteController,
-                  onChanged: (_) => setState(() {}),
-                  decoration: InputDecoration(
-                    hintText: 'Add note',
-                    prefixIcon: const Icon(Icons.edit_note_rounded),
-                    suffixIcon: _noteController.text.isEmpty
-                        ? null
-                        : IconButton(
-                            onPressed: () {
-                              _noteController.clear();
-                              setState(() {});
-                            },
-                            icon: const Icon(Icons.close_rounded),
+                      const SizedBox(height: 28),
+                      Text(
+                        amountState.displayExpression,
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            amountLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: _selectedType.isIncome
+                                  ? AppColors.success
+                                  : _selectedType.isTransfer
+                                      ? AppColors.primaryBlue
+                                      : AppColors.textDark,
+                              fontSize: 52,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1.4,
+                            ),
                           ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 220),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F8FB),
+                              borderRadius: BorderRadius.circular(999),
+                              boxShadow: _noteFocusNode.hasFocus
+                                  ? const <BoxShadow>[
+                                      BoxShadow(
+                                        color: Color(0x1409386D),
+                                        blurRadius: 18,
+                                        offset: Offset(0, 10),
+                                      ),
+                                    ]
+                                  : const <BoxShadow>[],
+                            ),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: <Widget>[
+                                TextField(
+                                  controller: _noteController,
+                                  focusNode: _noteFocusNode,
+                                  maxLines: 1,
+                                  textAlign: TextAlign.center,
+                                  textInputAction: TextInputAction.done,
+                                  decoration: const InputDecoration(
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                                if (showNotePlaceholder)
+                                  IgnorePointer(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: <Widget>[
+                                        if (showNoteIcon) ...<Widget>[
+                                          const Icon(
+                                            Icons.edit_note_rounded,
+                                            size: 16,
+                                            color: AppColors.textMuted,
+                                          ),
+                                          const SizedBox(width: 4),
+                                        ],
+                                        Text(
+                                          noteHintText,
+                                          style: const TextStyle(
+                                            color: AppColors.textMuted,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: AddExpenseSelectionCapsule(
+                              icon: selectedAccount == null
+                                  ? Icons.account_balance_wallet_outlined
+                                  : resolveAccountIcon(selectedAccount.iconKey),
+                              iconColor: AppColors.primaryBlue,
+                              background: AppColors.lightBlueBg,
+                              label: _sourceAccountLabel(selectedAccount),
+                              onTap: accounts.isNotEmpty
+                                  ? () => _pickAccount(accounts)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _selectedType == TransactionType.transfer
+                                ? AddExpenseSelectionCapsule(
+                                    icon: toAccount == null
+                                        ? Icons.compare_arrows_rounded
+                                        : resolveAccountIcon(
+                                            toAccount.iconKey,
+                                          ),
+                                    iconColor: AppColors.primaryBlue,
+                                    background: AppColors.lightBlueBg,
+                                    label: _destinationAccountLabel(toAccount),
+                                    onTap: accounts.isNotEmpty
+                                        ? () => _pickToAccount(accounts)
+                                        : null,
+                                  )
+                                : AddExpenseSelectionCapsule(
+                                    icon:
+                                        _selectedType == TransactionType.income
+                                            ? selectedIncomeCat.icon
+                                            : selectedExpenseCat.icon,
+                                    iconColor:
+                                        _selectedType == TransactionType.income
+                                            ? selectedIncomeCat.color
+                                            : selectedExpenseCat.color,
+                                    background:
+                                        (_selectedType == TransactionType.income
+                                                ? selectedIncomeCat.color
+                                                : selectedExpenseCat.color)
+                                            .withValues(alpha: 0.15),
+                                    label:
+                                        _selectedType == TransactionType.income
+                                            ? selectedIncomeCat.name
+                                            : selectedExpenseCat.name,
+                                    onTap:
+                                        _selectedType == TransactionType.income
+                                            ? _pickIncomeCategory
+                                            : _pickExpenseCategory,
+                                  ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: AddExpenseInfoCapsule(
+                              icon: Icons.today_outlined,
+                              label: DateFormat('EEE, d MMM')
+                                  .format(_selectedDate),
+                              onTap: _pickDate,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: AddExpenseInfoCapsule(
+                              icon: Icons.schedule_rounded,
+                              label: DateFormat('HH:mm').format(_selectedDate),
+                              onTap: _pickTime,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      GridView.count(
+                        crossAxisCount: 4,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 0.96,
+                        children: <Widget>[
+                          _buildOperatorKey('+'),
+                          _buildDigitKey('1'),
+                          _buildDigitKey('2'),
+                          _buildDigitKey('3'),
+                          _buildOperatorKey('-'),
+                          _buildDigitKey('4'),
+                          _buildDigitKey('5'),
+                          _buildDigitKey('6'),
+                          AddExpenseKeypadButton(
+                            onTap: amountState.canEvaluate
+                                ? _applyExpression
+                                : null,
+                            isEnabled: amountState.canEvaluate,
+                            backgroundColor: const Color(0xFFEFF5FF),
+                            foregroundColor: AppColors.primaryBlue,
+                            child: const Text('='),
+                          ),
+                          _buildDigitKey('7'),
+                          _buildDigitKey('8'),
+                          _buildDigitKey('9'),
+                          AddExpenseKeypadButton(
+                            onTap: _appendDecimal,
+                            child: const Text('.'),
+                          ),
+                          _buildDigitKey('0'),
+                          AddExpenseKeypadButton(
+                            onTap: _backspace,
+                            backgroundColor: const Color(0xFFFFE7EC),
+                            foregroundColor: const Color(0xFFC23358),
+                            child: const Icon(Icons.backspace_outlined),
+                          ),
+                          AddExpenseKeypadButton(
+                            onTap: canSubmit ? _saveExpense : null,
+                            isEnabled: canSubmit,
+                            backgroundColor: AppColors.textDark,
+                            foregroundColor: Colors.white,
+                            child: _isSaving
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Icon(Icons.check_rounded),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  AddExpenseInfoCapsule(
-                    icon: Icons.today_outlined,
-                    label: DateFormat('EEE, d MMM').format(_selectedDate),
-                    onTap: _pickDate,
-                  ),
-                  const SizedBox(width: 8),
-                  AddExpenseInfoCapsule(
-                    icon: Icons.schedule_rounded,
-                    label: DateFormat('HH:mm').format(_selectedDate),
-                    onTap: _pickTime,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  AddExpenseSelectionCapsule(
-                    icon: selectedAccount == null
-                        ? Icons.account_balance_wallet_outlined
-                        : resolveAccountIcon(selectedAccount.iconKey),
-                    iconColor: AppColors.primaryBlue,
-                    background: AppColors.lightBlueBg,
-                    label: selectedAccount?.name ?? 'No account',
-                    onTap: accounts.isNotEmpty
-                        ? () => _pickAccount(accounts)
-                        : null,
-                  ),
-                  if (_selectedType == TransactionType.transfer) ...<Widget>[
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Icon(
-                        Icons.sync_alt_rounded,
-                        color: AppColors.primaryBlue,
-                        size: 20,
-                      ),
-                    ),
-                    AddExpenseSelectionCapsule(
-                      icon: toAccount == null
-                          ? Icons.account_balance_wallet_outlined
-                          : resolveAccountIcon(toAccount.iconKey),
-                      iconColor: AppColors.primaryBlue,
-                      background: AppColors.lightBlueBg,
-                      label: toAccount?.name ?? 'No account',
-                      onTap: accounts.isNotEmpty
-                          ? () => _pickToAccount(accounts)
-                          : null,
-                    ),
-                  ] else ...<Widget>[
-                    const SizedBox(width: 8),
-                    if (_selectedType == TransactionType.income)
-                      AddExpenseSelectionCapsule(
-                        icon: selectedIncomeCat.icon,
-                        iconColor: selectedIncomeCat.color,
-                        background:
-                            selectedIncomeCat.color.withValues(alpha: 0.15),
-                        label: selectedIncomeCat.name,
-                        onTap: _tapIncomeCategory,
-                      )
-                    else
-                      AddExpenseSelectionCapsule(
-                        icon: selectedExpenseCat.icon,
-                        iconColor: selectedExpenseCat.color,
-                        background:
-                            selectedExpenseCat.color.withValues(alpha: 0.15),
-                        label: selectedExpenseCat.name,
-                        onTap: _tapExpenseCategory,
-                      ),
-                  ],
-                ],
-              ),
-              const Spacer(),
-              GridView.count(
-                crossAxisCount: 3,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.3,
-                children: <Widget>[
-                  for (final key in <String>[
-                    '1',
-                    '2',
-                    '3',
-                    '4',
-                    '5',
-                    '6',
-                    '7',
-                    '8',
-                    '9',
-                    '.',
-                    '0',
-                  ])
-                    AddExpenseKeypadButton(
-                      label: key,
-                      onTap: () => _appendValue(key),
-                    ),
-                  AddExpenseKeypadButton(
-                    label: '',
-                    isBackspace: true,
-                    onTap: _backspace,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              AppButton(
-                label: 'Save',
-                onPressed: _saveExpense,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
+  }
+
+  AddExpenseKeypadButton _buildDigitKey(String value) {
+    return AddExpenseKeypadButton(
+      onTap: () => _appendDigit(value),
+      child: Text(value),
+    );
+  }
+
+  AddExpenseKeypadButton _buildOperatorKey(String operator) {
+    return AddExpenseKeypadButton(
+      onTap: () => _appendOperator(operator),
+      backgroundColor: const Color(0xFFF1F4FB),
+      foregroundColor: AppColors.textDark,
+      child: Text(operator),
+    );
+  }
+
+  void _handleNoteFocusChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _queueDefaultSelections(List<AccountModel> accounts) {
+    if (_hasExplicitAccountChoice || accounts.isEmpty) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _hasExplicitAccountChoice) {
+        return;
+      }
+      setState(() {
+        _selectedAccountId = accounts.first.id;
+        _hasExplicitAccountChoice = true;
+        if (_selectedType == TransactionType.transfer) {
+          _ensureTransferAccounts(accounts);
+        }
+      });
+    });
   }
 
   AccountModel? _resolveSelectedAccount(List<AccountModel> accounts) {
@@ -371,6 +509,18 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     return accounts.first;
   }
 
+  AccountModel? _resolveToAccount(List<AccountModel> accounts) {
+    if (accounts.isEmpty || _toAccountId == null) {
+      return null;
+    }
+    for (final account in accounts) {
+      if (account.id == _toAccountId) {
+        return account;
+      }
+    }
+    return null;
+  }
+
   String _formatAmount(double amount, String locale, String symbol) {
     return NumberFormat.currency(
       locale: locale,
@@ -379,112 +529,198 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     ).format(amount);
   }
 
-  void _appendValue(String value) {
+  String _sourceAccountLabel(AccountModel? account) {
+    if (_selectedType == TransactionType.transfer) {
+      return account == null ? 'From account' : 'From ${account.name}';
+    }
+    return account?.name ?? 'Choose account';
+  }
+
+  String _destinationAccountLabel(AccountModel? account) {
+    return account == null ? 'To account' : 'To ${account.name}';
+  }
+
+  String? _validationMessage({
+    required AmountExpressionResult amountState,
+    required AccountModel? selectedAccount,
+    required AccountModel? toAccount,
+  }) {
+    if (_isSaving) {
+      return null;
+    }
+    if (amountState.errorText case final String error) {
+      return error;
+    }
+    if (_selectedType == TransactionType.transfer) {
+      if (selectedAccount == null || toAccount == null) {
+        return 'Choose both accounts.';
+      }
+      if (selectedAccount.id == toAccount.id) {
+        return 'Pick two different accounts.';
+      }
+    }
+    return null;
+  }
+
+  bool _canSubmit({
+    required AmountExpressionResult amountState,
+    required AccountModel? selectedAccount,
+    required AccountModel? toAccount,
+  }) {
+    return !_isSaving &&
+        amountState.canSubmit &&
+        _validationMessage(
+              amountState: amountState,
+              selectedAccount: selectedAccount,
+              toAccount: toAccount,
+            ) ==
+            null;
+  }
+
+  void _appendDigit(String value) {
     setState(() {
-      if (value == '.' && _amountText.contains('.')) {
+      if (_amountExpression == '0') {
+        _amountExpression = value;
         return;
       }
-      if (_amountText == '0' && value != '.') {
-        _amountText = value;
-      } else {
-        _amountText += value;
+
+      final currentSegment = _currentSegment(_amountExpression);
+      if (currentSegment == '0') {
+        _amountExpression =
+            _amountExpression.substring(0, _amountExpression.length - 1) +
+                value;
+        return;
       }
+
+      _amountExpression += value;
+    });
+  }
+
+  void _appendDecimal() {
+    setState(() {
+      final currentSegment = _currentSegment(_amountExpression);
+      if (currentSegment.contains('.')) {
+        return;
+      }
+      if (_amountExpression == '0') {
+        _amountExpression = '0.';
+        return;
+      }
+      if (_endsWithOperator(_amountExpression)) {
+        _amountExpression += '0.';
+        return;
+      }
+      _amountExpression += '.';
+    });
+  }
+
+  void _appendOperator(String operator) {
+    setState(() {
+      if (_amountExpression.isEmpty || _amountExpression == '0') {
+        return;
+      }
+      if (_endsWithOperator(_amountExpression)) {
+        _amountExpression =
+            '${_amountExpression.substring(0, _amountExpression.length - 1)}$operator';
+        return;
+      }
+      if (_amountExpression.endsWith('.')) {
+        _amountExpression += '0';
+      }
+      _amountExpression += operator;
+    });
+  }
+
+  void _applyExpression() {
+    final result = evaluateAmountExpression(_amountExpression);
+    if (!result.canEvaluate) {
+      return;
+    }
+    setState(() {
+      _amountExpression = formatAmountExpressionValue(result.amount);
     });
   }
 
   void _backspace() {
     setState(() {
-      if (_amountText.length <= 1) {
-        _amountText = '0';
+      if (_amountExpression.length <= 1) {
+        _amountExpression = '0';
         return;
       }
-      _amountText = _amountText.substring(0, _amountText.length - 1);
+      _amountExpression =
+          _amountExpression.substring(0, _amountExpression.length - 1);
+      if (_amountExpression.isEmpty) {
+        _amountExpression = '0';
+      }
     });
+  }
+
+  String _currentSegment(String expression) {
+    final plusIndex = expression.lastIndexOf('+');
+    final minusIndex = expression.lastIndexOf('-');
+    final splitIndex = plusIndex > minusIndex ? plusIndex : minusIndex;
+    if (splitIndex == -1) {
+      return expression;
+    }
+    return expression.substring(splitIndex + 1);
+  }
+
+  bool _endsWithOperator(String expression) {
+    return expression.endsWith('+') || expression.endsWith('-');
   }
 
   void _switchType(TransactionType type) {
     if (_selectedType == type) {
       return;
     }
+
+    final accounts =
+        ref.read(accountListProvider).value ?? const <AccountModel>[];
     setState(() {
       _selectedType = type;
+      if (type == TransactionType.transfer) {
+        _ensureTransferAccounts(accounts);
+      }
+      if (type != TransactionType.transfer &&
+          _selectedExpenseCategory.isEmpty) {
+        _selectedExpenseCategory = expenseCategories.first.name;
+      }
+      if (type == TransactionType.income && _selectedIncomeCategory.isEmpty) {
+        _selectedIncomeCategory = incomeCategories.first.name;
+      }
     });
   }
 
-  Future<void> _tapExpenseCategory() async {
-    if (_selectedType != TransactionType.expense) {
-      setState(() => _selectedType = TransactionType.expense);
+  void _ensureTransferAccounts(List<AccountModel> accounts) {
+    if (accounts.isEmpty) {
+      return;
     }
-    await _pickExpenseCategory();
-  }
 
-  Future<void> _tapIncomeCategory() async {
-    if (_selectedType != TransactionType.income) {
-      setState(() => _selectedType = TransactionType.income);
+    _selectedAccountId ??= accounts.first.id;
+    if (_toAccountId == null || _toAccountId == _selectedAccountId) {
+      for (final account in accounts) {
+        if (account.id != _selectedAccountId) {
+          _toAccountId = account.id;
+          return;
+        }
+      }
+      _toAccountId = accounts.first.id;
     }
-    await _pickIncomeCategory();
   }
 
   Future<void> _pickExpenseCategory() async {
-    final selected = await showModalBottomSheet<ExpenseCategory>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD7DFEA),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Select expense category',
-                    style: TextStyle(
-                      color: Color(0xFF111A33),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ...expenseCategories.map((category) {
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: category.color.withValues(alpha: 0.15),
-                      child: Icon(category.icon, color: category.color),
-                    ),
-                    title: Text(
-                      category.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    trailing: category.name == _selectedExpenseCategory
-                        ? const Icon(
-                            Icons.check_rounded,
-                            color: Color(0xFF0A6BE8),
-                          )
-                        : null,
-                    onTap: () => Navigator.of(context).pop(category),
-                  );
-                }),
-              ],
-            ),
-          ),
+    final selected = await _showPickerSheet<ExpenseCategory>(
+      title: 'Select expense category',
+      children: expenseCategories.map((category) {
+        return _SelectionSheetTile(
+          icon: category.icon,
+          iconColor: category.color,
+          iconBackground: category.color.withValues(alpha: 0.15),
+          label: category.name,
+          isSelected: category.name == _selectedExpenseCategory,
+          onTap: () => Navigator.of(context).pop(category),
         );
-      },
+      }).toList(growable: false),
     );
     if (selected == null) {
       return;
@@ -493,65 +729,18 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   }
 
   Future<void> _pickIncomeCategory() async {
-    final selected = await showModalBottomSheet<ExpenseCategory>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD7DFEA),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Select income category',
-                    style: TextStyle(
-                      color: Color(0xFF111A33),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ...incomeCategories.map((category) {
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: category.color.withValues(alpha: 0.15),
-                      child: Icon(category.icon, color: category.color),
-                    ),
-                    title: Text(
-                      category.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    trailing: category.name == _selectedIncomeCategory
-                        ? const Icon(
-                            Icons.check_rounded,
-                            color: Color(0xFF0A6BE8),
-                          )
-                        : null,
-                    onTap: () => Navigator.of(context).pop(category),
-                  );
-                }),
-              ],
-            ),
-          ),
+    final selected = await _showPickerSheet<ExpenseCategory>(
+      title: 'Select income category',
+      children: incomeCategories.map((category) {
+        return _SelectionSheetTile(
+          icon: category.icon,
+          iconColor: category.color,
+          iconBackground: category.color.withValues(alpha: 0.15),
+          label: category.name,
+          isSelected: category.name == _selectedIncomeCategory,
+          onTap: () => Navigator.of(context).pop(category),
         );
-      },
+      }).toList(growable: false),
     );
     if (selected == null) {
       return;
@@ -560,99 +749,124 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   }
 
   Future<void> _pickAccount(List<AccountModel> accounts) async {
-    final selected = await showModalBottomSheet<AccountModel?>(
+    final selected = await _showPickerSheet<_NullableAccountSelection>(
+      title: 'Choose account',
+      children: <Widget>[
+        _SelectionSheetTile(
+          icon: Icons.do_not_disturb_on_outlined,
+          iconColor: AppColors.textMuted,
+          iconBackground: const Color(0xFFEFF5FF),
+          label: 'No account',
+          isSelected: _selectedAccountId == null,
+          onTap: () => Navigator.of(context).pop(
+            const _NullableAccountSelection(null),
+          ),
+        ),
+        ...accounts.map((account) {
+          return _SelectionSheetTile(
+            icon: resolveAccountIcon(account.iconKey),
+            iconColor: AppColors.primaryBlue,
+            iconBackground: const Color(0xFFEFF5FF),
+            label: account.name,
+            isSelected: account.id == _selectedAccountId,
+            onTap: () => Navigator.of(context).pop(
+              _NullableAccountSelection(account),
+            ),
+          );
+        }),
+      ],
+    );
+
+    if (!mounted || selected == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedAccountId = selected.account?.id;
+      _hasExplicitAccountChoice = true;
+      if (_selectedType == TransactionType.transfer) {
+        _ensureTransferAccounts(accounts);
+      }
+    });
+  }
+
+  Future<void> _pickToAccount(List<AccountModel> accounts) async {
+    final selected = await _showPickerSheet<AccountModel>(
+      title: 'Transfer to account',
+      children: accounts.map((account) {
+        return _SelectionSheetTile(
+          icon: resolveAccountIcon(account.iconKey),
+          iconColor: AppColors.primaryBlue,
+          iconBackground: const Color(0xFFEFF5FF),
+          label: account.name,
+          isSelected: account.id == _toAccountId,
+          onTap: () => Navigator.of(context).pop(account),
+        );
+      }).toList(growable: false),
+    );
+
+    if (!mounted || selected == null) {
+      return;
+    }
+
+    setState(() {
+      _toAccountId = selected.id;
+    });
+  }
+
+  Future<T?> _showPickerSheet<T>({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return showModalBottomSheet<T>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD7DFEA),
-                    borderRadius: BorderRadius.circular(99),
+        return FractionallySizedBox(
+          heightFactor: 0.74,
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD7DFEA),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 18),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Choose account',
-                    style: TextStyle(
+                  const SizedBox(height: 18),
+                  Text(
+                    title,
+                    style: const TextStyle(
                       color: Color(0xFF111A33),
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const CircleAvatar(
-                    backgroundColor: Color(0xFFEFF5FF),
-                    child: Icon(
-                      Icons.do_not_disturb_on_outlined,
-                      color: Color(0xFF90A1BE),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ListView(
+                      children: children,
                     ),
                   ),
-                  title: const Text(
-                    'No account',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  trailing: _selectedAccountId == null
-                      ? const Icon(
-                          Icons.check_rounded,
-                          color: Color(0xFF0A6BE8),
-                        )
-                      : null,
-                  onTap: () => Navigator.of(context).pop(null),
-                ),
-                ...accounts.map((account) {
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFFEFF5FF),
-                      child: Icon(
-                        resolveAccountIcon(account.iconKey),
-                        color: const Color(0xFF0A6BE8),
-                      ),
-                    ),
-                    title: Text(
-                      account.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    trailing: account.id == _selectedAccountId
-                        ? const Icon(
-                            Icons.check_rounded,
-                            color: Color(0xFF0A6BE8),
-                          )
-                        : null,
-                    onTap: () => Navigator.of(context).pop(account),
-                  );
-                }),
-              ],
+                ],
+              ),
             ),
           ),
         );
       },
     );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _selectedAccountId = selected?.id;
-      _hasExplicitAccountChoice = true;
-    });
   }
 
   Future<void> _pickDate() async {
@@ -696,163 +910,148 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   }
 
   Future<void> _saveExpense() async {
-    final amount = double.tryParse(_amountText) ?? 0;
+    if (_isSaving) {
+      return;
+    }
+
+    final amountState = evaluateAmountExpression(_amountExpression);
     final accounts =
         ref.read(accountListProvider).value ?? const <AccountModel>[];
-    final effectiveAccountId = _resolveSelectedAccount(accounts)?.id;
-    if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid amount before saving.')),
-      );
-      return;
-    }
-
-    if (_selectedType == TransactionType.transfer) {
-      final toAccount = _resolveToAccount(accounts);
-      if (effectiveAccountId == null || toAccount == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Select both source and destination accounts.'),
-          ),
-        );
-        return;
-      }
-      if (effectiveAccountId == toAccount.id) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Source and destination accounts must be different.'),
-          ),
-        );
-        return;
-      }
-      await ref.read(expenseControllerProvider).addTransfer(
-            amount: amount,
-            fromAccountId: effectiveAccountId,
-            toAccountId: toAccount.id,
-            date: _selectedDate,
-            note: _noteController.text,
-          );
-    } else if (widget.isEditing) {
-      await ref.read(expenseControllerProvider).updateExpense(
-            id: widget.expenseId!,
-            amount: amount,
-            category: _selectedType.isIncome
-                ? _selectedIncomeCategory
-                : _selectedExpenseCategory,
-            date: _selectedDate,
-            note: _noteController.text,
-            accountId: effectiveAccountId,
-            type: _selectedType,
-          );
-    } else {
-      await ref.read(expenseControllerProvider).addExpense(
-            amount: amount,
-            category: _selectedType.isIncome
-                ? _selectedIncomeCategory
-                : _selectedExpenseCategory,
-            date: _selectedDate,
-            note: _noteController.text,
-            accountId: effectiveAccountId,
-            type: _selectedType,
-          );
-    }
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pop();
-  }
-
-  void _toggleTransferMode() {
-    setState(() {
-      _selectedType = _selectedType == TransactionType.transfer
-          ? TransactionType.expense
-          : TransactionType.transfer;
-    });
-  }
-
-  AccountModel? _resolveToAccount(List<AccountModel> accounts) {
-    if (accounts.isEmpty || _toAccountId == null) {
-      return null;
-    }
-    for (final account in accounts) {
-      if (account.id == _toAccountId) {
-        return account;
-      }
-    }
-    return null;
-  }
-
-  Future<void> _pickToAccount(List<AccountModel> accounts) async {
-    final selected = await showModalBottomSheet<AccountModel?>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD7DFEA),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Transfer to account',
-                    style: TextStyle(
-                      color: Color(0xFF111A33),
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ...accounts.map((account) {
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: const Color(0xFFEFF5FF),
-                      child: Icon(
-                        resolveAccountIcon(account.iconKey),
-                        color: const Color(0xFF0A6BE8),
-                      ),
-                    ),
-                    title: Text(
-                      account.name,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    trailing: account.id == _toAccountId
-                        ? const Icon(
-                            Icons.check_rounded,
-                            color: Color(0xFF0A6BE8),
-                          )
-                        : null,
-                    onTap: () => Navigator.of(context).pop(account),
-                  );
-                }),
-              ],
-            ),
-          ),
-        );
-      },
+    final selectedAccount = _resolveSelectedAccount(accounts);
+    final toAccount = _resolveToAccount(accounts);
+    final validationMessage = _validationMessage(
+      amountState: amountState,
+      selectedAccount: selectedAccount,
+      toAccount: toAccount,
     );
 
-    if (!mounted || selected == null) {
+    if (validationMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(validationMessage)));
       return;
     }
 
-    setState(() {
-      _toAccountId = selected.id;
-    });
+    setState(() => _isSaving = true);
+
+    try {
+      final controller = ref.read(expenseControllerProvider);
+      if (_selectedType == TransactionType.transfer) {
+        if (widget.isEditing) {
+          await controller.updateExpense(
+            id: widget.expenseId!,
+            amount: amountState.amount,
+            category: 'Transfer',
+            date: _selectedDate,
+            note: _noteController.text,
+            accountId: selectedAccount?.id,
+            toAccountId: toAccount?.id,
+            type: TransactionType.transfer,
+          );
+        } else {
+          await controller.addTransfer(
+            amount: amountState.amount,
+            fromAccountId: selectedAccount!.id,
+            toAccountId: toAccount!.id,
+            date: _selectedDate,
+            note: _noteController.text,
+          );
+        }
+      } else if (widget.isEditing) {
+        await controller.updateExpense(
+          id: widget.expenseId!,
+          amount: amountState.amount,
+          category: _selectedType.isIncome
+              ? _selectedIncomeCategory
+              : _selectedExpenseCategory,
+          date: _selectedDate,
+          note: _noteController.text,
+          accountId: selectedAccount?.id,
+          type: _selectedType,
+        );
+      } else {
+        await controller.addExpense(
+          amount: amountState.amount,
+          category: _selectedType.isIncome
+              ? _selectedIncomeCategory
+              : _selectedExpenseCategory,
+          date: _selectedDate,
+          note: _noteController.text,
+          accountId: selectedAccount?.id,
+          type: _selectedType,
+        );
+      }
+
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop();
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+}
+
+class _NullableAccountSelection {
+  const _NullableAccountSelection(this.account);
+
+  final AccountModel? account;
+}
+
+class _SelectionSheetTile extends StatelessWidget {
+  const _SelectionSheetTile({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isSelected ? const Color(0xFFF6F9FF) : Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: ListTile(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 2,
+          ),
+          leading: CircleAvatar(
+            backgroundColor: iconBackground,
+            child: Icon(icon, color: iconColor),
+          ),
+          title: Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textDark,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          trailing: isSelected
+              ? const Icon(
+                  Icons.check_rounded,
+                  color: AppColors.primaryBlue,
+                )
+              : null,
+          onTap: onTap,
+        ),
+      ),
+    );
   }
 }

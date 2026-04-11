@@ -49,11 +49,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       7,
       (index) => _windowStart.add(Duration(days: index)),
     );
-    final selectedExpenses =
-        expenses
-            .where((expense) => _isSameLocalDay(expense.date, _selectedDate))
-            .toList(growable: false)
-          ..sort((left, right) => right.date.compareTo(left.date));
+    final selectedExpenses = expenses
+        .where((expense) => _isSameLocalDay(expense.date, _selectedDate))
+        .toList(growable: false)
+      ..sort((left, right) => right.date.compareTo(left.date));
     final selectedTotal = selectedExpenses.fold<double>(
       0,
       (sum, expense) => sum + expense.signedAmount,
@@ -70,6 +69,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             privacyModeEnabled: privacyModeEnabled,
             onMenuPressed: () => Scaffold.of(context).openDrawer(),
             onSearchPressed: () => AppRoutes.pushTransactionSearch(context),
+            onTogglePrivacy: () {
+              ref
+                  .read(appPreferencesControllerProvider)
+                  .setPrivacyMode(!privacyModeEnabled);
+            },
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
@@ -123,21 +127,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   height: 72,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
-                    children: <double>[50, 100, 200, 500, 1000]
-                        .map((amount) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: HomeAmountChip(
-                              label: currencyFormat.format(amount),
-                              onTap: () => _openAddExpenseScreen(
-                                context,
-                                initialAmount: amount,
-                                initialDate: _selectedDate,
-                              ),
-                            ),
-                          );
-                        })
-                        .toList(growable: false),
+                    children: <double>[50, 100, 200, 500, 1000].map((amount) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: HomeAmountChip(
+                          label: currencyFormat.format(amount),
+                          onTap: () => _openAddExpenseScreen(
+                            context,
+                            initialAmount: amount,
+                            initialDate: _selectedDate,
+                          ),
+                        ),
+                      );
+                    }).toList(growable: false),
                   ),
                 ),
                 const SizedBox(height: 30),
@@ -245,6 +247,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       initialDate: expense.date.toLocal(),
       initialNote: expense.note,
       initialAccountId: expense.accountId,
+      initialToAccountId: expense.toAccountId,
       initialType: expense.type,
     );
   }
