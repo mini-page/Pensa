@@ -19,6 +19,7 @@ class AppPreferencesModel {
     this.pinHash = '',
     this.biometricLockEnabled = false,
     this.whatsNewShownVersion = '',
+    this.savingsGoalsJson = '',
   });
 
   static const AppPreferencesModel defaults = AppPreferencesModel(
@@ -37,6 +38,7 @@ class AppPreferencesModel {
     pinHash: '',
     biometricLockEnabled: false,
     whatsNewShownVersion: '',
+    savingsGoalsJson: '',
   );
 
   final String themeModeKey;
@@ -60,6 +62,9 @@ class AppPreferencesModel {
   final bool biometricLockEnabled;
   /// The app version string at the time the What's New dialog was last shown.
   final String whatsNewShownVersion;
+  /// JSON-serialised list of savings goals. Each goal:
+  /// `{id, name, targetAmount, currentAmount}`.
+  final String savingsGoalsJson;
 
   bool get isPinEnabled => pinHash.isNotEmpty;
 
@@ -83,6 +88,7 @@ class AppPreferencesModel {
     bool? biometricLockEnabled,
     String? whatsNewShownVersion,
     bool clearPin = false,
+    String? savingsGoalsJson,
   }) {
     return AppPreferencesModel(
       themeModeKey: themeModeKey ?? this.themeModeKey,
@@ -108,6 +114,7 @@ class AppPreferencesModel {
       pinHash: clearPin ? '' : (pinHash ?? this.pinHash),
       biometricLockEnabled: biometricLockEnabled ?? this.biometricLockEnabled,
       whatsNewShownVersion: whatsNewShownVersion ?? this.whatsNewShownVersion,
+      savingsGoalsJson: savingsGoalsJson ?? this.savingsGoalsJson,
     );
   }
 }
@@ -145,6 +152,7 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
         AppPreferencesModel.defaults.biometricLockEnabled;
     String whatsNewShownVersion =
         AppPreferencesModel.defaults.whatsNewShownVersion;
+    String savingsGoalsJson = AppPreferencesModel.defaults.savingsGoalsJson;
 
     try {
       if (reader.availableBytes > 0) locale = reader.readString();
@@ -174,6 +182,7 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
       if (reader.availableBytes > 0) pinHash = reader.readString();
       if (reader.availableBytes > 0) biometricLockEnabled = reader.readBool();
       if (reader.availableBytes > 0) whatsNewShownVersion = reader.readString();
+      if (reader.availableBytes > 0) savingsGoalsJson = reader.readString();
     } catch (_) {
       // Fallback if reading fails
     }
@@ -196,6 +205,7 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
       pinHash: pinHash,
       biometricLockEnabled: biometricLockEnabled,
       whatsNewShownVersion: whatsNewShownVersion,
+      savingsGoalsJson: savingsGoalsJson,
     );
   }
 
@@ -221,7 +231,8 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
       ..writeString(obj.displayName)
       ..writeString(obj.pinHash)
       ..writeBool(obj.biometricLockEnabled)
-      ..writeString(obj.whatsNewShownVersion);
+      ..writeString(obj.whatsNewShownVersion)
+      ..writeString(obj.savingsGoalsJson);
   }
 
   List<String> _readStringList(BinaryReader reader) {

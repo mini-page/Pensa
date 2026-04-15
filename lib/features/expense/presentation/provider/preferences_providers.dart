@@ -98,9 +98,8 @@ final biometricLockEnabledProvider = Provider<bool>((ref) {
       AppPreferencesModel.defaults.biometricLockEnabled;
 });
 
-final whatsNewShownVersionProvider = Provider<String>((ref) {
-  return ref.watch(appPreferencesProvider).value?.whatsNewShownVersion ??
-      AppPreferencesModel.defaults.whatsNewShownVersion;
+final savingsGoalsJsonProvider = Provider<String>((ref) {
+  return ref.watch(appPreferencesProvider).value?.savingsGoalsJson ?? '';
 });
   return ref.watch(appPreferencesProvider).value?.isOnboardingCompleted ??
       AppPreferencesModel.defaults.isOnboardingCompleted;
@@ -210,7 +209,13 @@ class AppPreferencesController {
         .save(_current.copyWith(whatsNewShownVersion: version));
   }
 
+  Future<void> setSavingsGoalsJson(String json) async {
+    await _ref
+        .read(appPreferencesProvider.notifier)
+        .save(_current.copyWith(savingsGoalsJson: json));
+  }
 
+  Future<void> setThemeMode(String themeModeKey) async {
     await _ref
         .read(appPreferencesProvider.notifier)
         .save(_current.copyWith(themeModeKey: themeModeKey));

@@ -10,7 +10,7 @@ class AccountsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       child: DefaultTabController(
-        length: 3,
+        length: 5,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
