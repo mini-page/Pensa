@@ -13,7 +13,8 @@ import '../../widgets/split_bill_tool_view.dart';
 
 const _maxDisplayedFutureTransactions = 6;
 
-/// Tab bar for the Tools workspace sections.
+/// Renders the Tools workspace tab bar with Split Expenses,
+/// Recurring Subscriptions, and Future Transactions tabs.
 class ToolsTabBar extends StatelessWidget {
   const ToolsTabBar({super.key});
 
@@ -45,7 +46,8 @@ class ToolsTabBar extends StatelessWidget {
   }
 }
 
-/// Tab content for split, recurring, and future-transaction tools.
+/// Renders the tab views that correspond to [ToolsTabBar].
+/// Each tab hosts one tool section.
 class ToolsTabView extends StatelessWidget {
   const ToolsTabView({super.key});
 
@@ -61,6 +63,7 @@ class ToolsTabView extends StatelessWidget {
   }
 }
 
+/// Scroll wrapper used by each tool tab to prevent overflow.
 class _ToolsTabPane extends StatelessWidget {
   const _ToolsTabPane({required this.child});
 
