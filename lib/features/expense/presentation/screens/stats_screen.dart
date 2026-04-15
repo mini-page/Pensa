@@ -31,7 +31,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final snapshot = ref.watch(analyticsSnapshotProvider);
+    final snapshot = ref.watch(analyticsSnapshotProvider(_selectedRange));
     final privacyModeEnabled = ref.watch(privacyModeEnabledProvider);
     final currencyFormat = ref.watch(currencyFormatProvider);
 

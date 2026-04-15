@@ -62,10 +62,11 @@ final statsProvider = Provider<ExpenseStats>((ref) {
   return ExpenseStats.fromExpenses(expenses);
 });
 
-final analyticsSnapshotProvider = Provider<AnalyticsSnapshot>((ref) {
+final analyticsSnapshotProvider =
+    Provider.family<AnalyticsSnapshot, String>((ref, rangeLabel) {
   final expenses =
       ref.watch(expenseListProvider).value ?? const <ExpenseModel>[];
-  return AnalyticsSnapshot.fromExpenses(expenses);
+  return AnalyticsSnapshot.fromExpenses(expenses, rangeLabel: rangeLabel);
 });
 
 class ExpenseListNotifier extends AsyncNotifier<List<ExpenseModel>> {
