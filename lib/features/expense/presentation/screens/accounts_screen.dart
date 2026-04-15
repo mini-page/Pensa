@@ -1,51 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'accounts/accounts_widgets.dart';
-import '../provider/preferences_providers.dart';
+import 'accounts/tools_tab_widgets.dart';
 
-class AccountsScreen extends ConsumerStatefulWidget {
+class AccountsScreen extends ConsumerWidget {
   const AccountsScreen({super.key});
 
   @override
-  ConsumerState<AccountsScreen> createState() => _AccountsScreenState();
-}
-
-class _AccountsScreenState extends ConsumerState<AccountsScreen> {
-  bool _showTools = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final currency = ref.watch(currencyFormatProvider);
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return SafeArea(
-      child: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            sliver: SliverToBoxAdapter(
-              child: AccountsPillSwitch(
-                leftLabel: 'Accounts',
-                rightLabel: 'Tools',
-                isRightSelected: _showTools,
-                onChanged: (value) {
-                  setState(() {
-                    _showTools = value;
-                  });
-                },
-              ),
+      child: DefaultTabController(
+        length: 3,
+        child: Column(
+          children: const <Widget>[
+            Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: ToolsTabHeader(),
             ),
-          ),
-          if (!_showTools)
-            SliverAccountsTabView(currency: currency)
-          else
-            const SliverToBoxAdapter(
+            Expanded(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(20, 24, 20, 120),
-                child: AccountsToolsTabView(),
+                padding: EdgeInsets.fromLTRB(20, 20, 20, 120),
+                child: ToolsTabView(),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }

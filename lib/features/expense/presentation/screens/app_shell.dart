@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../../shared/widgets/floating_nav_bar.dart';
-import '../provider/account_providers.dart';
-import '../widgets/account_editor_sheet.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/power_pill_menu.dart';
 import 'accounts_screen.dart';
@@ -91,36 +89,6 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   Future<void> _handleFabPressed() async {
-    if (_selectedIndex == 0 || _selectedIndex == 1 || _selectedIndex == 2) {
-      await _openAddExpenseScreen();
-      return;
-    }
-
-    if (_selectedIndex != 3) {
-      return;
-    }
-
-    await _openAddAccountSheet();
-  }
-
-  Future<void> _openAddAccountSheet() async {
-    final result = await showAccountEditorSheet(context);
-    if (result == null) {
-      return;
-    }
-
-    await ref.read(accountControllerProvider).saveAccount(
-          name: result.name,
-          iconKey: result.iconKey,
-          balance: result.balance,
-        );
-
-    if (!mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('${result.name} created.')));
+    await _openAddExpenseScreen();
   }
 }
