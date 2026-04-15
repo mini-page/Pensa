@@ -84,7 +84,24 @@ final currencyFormatProvider = Provider<NumberFormat>((ref) {
   );
 });
 
-final isOnboardingCompletedProvider = Provider<bool>((ref) {
+final displayNameProvider = Provider<String>((ref) {
+  return ref.watch(appPreferencesProvider).value?.displayName ??
+      AppPreferencesModel.defaults.displayName;
+});
+
+final isPinEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(appPreferencesProvider).value?.isPinEnabled ?? false;
+});
+
+final biometricLockEnabledProvider = Provider<bool>((ref) {
+  return ref.watch(appPreferencesProvider).value?.biometricLockEnabled ??
+      AppPreferencesModel.defaults.biometricLockEnabled;
+});
+
+final whatsNewShownVersionProvider = Provider<String>((ref) {
+  return ref.watch(appPreferencesProvider).value?.whatsNewShownVersion ??
+      AppPreferencesModel.defaults.whatsNewShownVersion;
+});
   return ref.watch(appPreferencesProvider).value?.isOnboardingCompleted ??
       AppPreferencesModel.defaults.isOnboardingCompleted;
 });
@@ -163,7 +180,37 @@ class AppPreferencesController {
   AppPreferencesModel get _current =>
       _ref.read(appPreferencesProvider).value ?? AppPreferencesModel.defaults;
 
-  Future<void> setThemeMode(String themeModeKey) async {
+  Future<void> setDisplayName(String name) async {
+    await _ref
+        .read(appPreferencesProvider.notifier)
+        .save(_current.copyWith(displayName: name));
+  }
+
+  Future<void> setPin(String pinHash) async {
+    await _ref
+        .read(appPreferencesProvider.notifier)
+        .save(_current.copyWith(pinHash: pinHash));
+  }
+
+  Future<void> clearPin() async {
+    await _ref
+        .read(appPreferencesProvider.notifier)
+        .save(_current.copyWith(clearPin: true));
+  }
+
+  Future<void> setBiometricLock(bool enabled) async {
+    await _ref
+        .read(appPreferencesProvider.notifier)
+        .save(_current.copyWith(biometricLockEnabled: enabled));
+  }
+
+  Future<void> setWhatsNewShownVersion(String version) async {
+    await _ref
+        .read(appPreferencesProvider.notifier)
+        .save(_current.copyWith(whatsNewShownVersion: version));
+  }
+
+
     await _ref
         .read(appPreferencesProvider.notifier)
         .save(_current.copyWith(themeModeKey: themeModeKey));

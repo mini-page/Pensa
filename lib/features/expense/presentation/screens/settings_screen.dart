@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:file_picker/file_picker.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
 import 'settings/settings_widgets.dart';
@@ -15,6 +16,7 @@ import '../provider/expense_providers.dart';
 import '../provider/preferences_providers.dart';
 import '../provider/recurring_subscription_providers.dart';
 import '../widgets/ui_feedback.dart';
+import 'pin_entry_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -26,6 +28,9 @@ class SettingsScreen extends ConsumerWidget {
 
     final smartReminders = ref.watch(smartRemindersEnabledProvider);
     final privacyMode = ref.watch(privacyModeEnabledProvider);
+    final isPinEnabled = ref.watch(isPinEnabledProvider);
+    final biometricEnabled = ref.watch(biometricLockEnabledProvider);
+    final displayName = ref.watch(displayNameProvider);
     final themeMode = ref.watch(appThemeModeProvider);
     final locale = ref.watch(localeProvider);
     final currencySymbol = ref.watch(currencySymbolProvider);
@@ -57,6 +62,22 @@ class SettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Profile ───────────────────────────────────────────────────
+            const SettingsSectionHeader(title: 'Profile'),
+            SettingsCard(
+              children: [
+                _buildActionTile(
+                  icon: Icons.person_outline_rounded,
+                  title: 'Display Name',
+                  subtitle: displayName.trim().isEmpty
+                      ? 'Tap to set your name'
+                      : displayName,
+                  onTap: () => _editDisplayName(context, ref, displayName),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
             // ── General ──────────────────────────────────────────────────
             const SettingsSectionHeader(title: 'General'),
             SettingsCard(
@@ -94,17 +115,37 @@ class SettingsScreen extends ConsumerWidget {
                   value: privacyMode,
                   onChanged: controller.setPrivacyMode,
                 ),
+                _buildToggleTile(
+                  icon: Icons.pin_outlined,
+                  title: 'PIN Lock',
+                  subtitle: isPinEnabled
+                      ? 'Tap to change or disable PIN'
+                      : 'Protect the app with a 4-digit PIN',
+                  value: isPinEnabled,
+                  onChanged: (enabled) =>
+                      _handlePinToggle(context, ref, enabled),
+                ),
+                if (isPinEnabled)
+                  _buildActionTile(
+                    icon: Icons.lock_reset_rounded,
+                    title: 'Change PIN',
+                    subtitle: 'Set a new 4-digit PIN',
+                    onTap: () async {
+                      await Navigator.of(context).push<bool>(
+                        MaterialPageRoute<bool>(
+                          builder: (_) => const PinEntryScreen(
+                            isSetup: true,
+                            isChange: true,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 _buildComingSoonTile(
                   context,
                   icon: Icons.fingerprint_rounded,
                   title: 'Biometric Lock',
                   subtitle: 'Secure the app with fingerprint or face ID',
-                ),
-                _buildComingSoonTile(
-                  context,
-                  icon: Icons.pin_outlined,
-                  title: 'PIN Lock',
-                  subtitle: 'Protect the app with a 4-digit PIN',
                 ),
               ],
             ),
@@ -230,12 +271,12 @@ class SettingsScreen extends ConsumerWidget {
                 _buildActionTile(
                   icon: Icons.info_outline_rounded,
                   title: 'App Version',
-                  subtitle: '2.0.0',
+                  subtitle: AppConstants.version,
                   onTap: () {
                     showAboutDialog(
                       context: context,
-                      applicationName: 'XPensa',
-                      applicationVersion: '2.0.0',
+                      applicationName: AppConstants.appName,
+                      applicationVersion: AppConstants.version,
                       applicationLegalese:
                           '© 2025 XPensa. Offline-first expense tracking.',
                     );
@@ -247,8 +288,8 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: 'Learn more about XPensa',
                   onTap: () => showAboutDialog(
                     context: context,
-                    applicationName: 'XPensa',
-                    applicationVersion: '2.0.0',
+                    applicationName: AppConstants.appName,
+                    applicationVersion: AppConstants.version,
                     children: const <Widget>[
                       Text(
                         'XPensa is an offline-first personal finance tracker '
@@ -299,6 +340,72 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _handlePinToggle(
+    BuildContext context,
+    WidgetRef ref,
+    bool enable,
+  ) async {
+    final controller = ref.read(appPreferencesControllerProvider);
+    if (enable) {
+      final result = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (_) => const PinEntryScreen(isSetup: true),
+        ),
+      );
+      if (result != true && context.mounted) {
+        context.showSnackBar('PIN setup cancelled.');
+      }
+    } else {
+      final confirmed = await confirmDestructiveAction(
+        context,
+        title: 'Disable PIN Lock?',
+        message: 'The app will no longer require a PIN to open.',
+        confirmLabel: 'Disable',
+      );
+      if (confirmed) {
+        await controller.clearPin();
+      }
+    }
+  }
+
+  Future<void> _editDisplayName(
+    BuildContext context,
+    WidgetRef ref,
+    String current,
+  ) async {
+    final controller = ref.read(appPreferencesControllerProvider);
+    final textController = TextEditingController(text: current);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Display Name'),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          maxLength: 40,
+          decoration: const InputDecoration(
+            hintText: 'Your name',
+          ),
+          onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(null),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.of(ctx).pop(textController.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (result != null && result.isNotEmpty) {
+      await controller.setDisplayName(result);
+    }
   }
 
   Future<void> _resetAppData(BuildContext context, WidgetRef ref) async {
@@ -418,18 +525,24 @@ class SettingsScreen extends ConsumerWidget {
             color: AppColors.textDark, fontWeight: FontWeight.w700),
       ),
       trailing: DropdownButton<String>(
-        value: currentLocale,
+        value: AppConstants.locales
+                .any((l) => l.locale == currentLocale)
+            ? currentLocale
+            : AppConstants.locales.first.locale,
         underline: const SizedBox(),
         onChanged: (value) {
           if (value != null) {
             controller.setLocale(value);
           }
         },
-        items: const [
-          DropdownMenuItem(value: 'en_IN', child: Text('English (IN)')),
-          DropdownMenuItem(value: 'en_US', child: Text('English (US)')),
-          DropdownMenuItem(value: 'hi_IN', child: Text('हिन्दी')),
-        ],
+        items: AppConstants.locales
+            .map(
+              (l) => DropdownMenuItem(
+                value: l.locale,
+                child: Text(l.label),
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -447,19 +560,24 @@ class SettingsScreen extends ConsumerWidget {
             color: AppColors.textDark, fontWeight: FontWeight.w700),
       ),
       trailing: DropdownButton<String>(
-        value: currentCurrency,
+        value: AppConstants.currencies
+                .any((c) => c.symbol == currentCurrency)
+            ? currentCurrency
+            : AppConstants.currencies.first.symbol,
         underline: const SizedBox(),
         onChanged: (value) {
           if (value != null) {
             controller.setCurrencySymbol(value);
           }
         },
-        items: const [
-          DropdownMenuItem(value: '\u20B9', child: Text('Rupee (\u20B9)')),
-          DropdownMenuItem(value: '\$', child: Text('Dollar (\$)')),
-          DropdownMenuItem(value: '\u20AC', child: Text('Euro (\u20AC)')),
-          DropdownMenuItem(value: '\u00A3', child: Text('Pound (\u00A3)')),
-        ],
+        items: AppConstants.currencies
+            .map(
+              (c) => DropdownMenuItem(
+                value: c.symbol,
+                child: Text(c.label),
+              ),
+            )
+            .toList(),
       ),
     );
   }
