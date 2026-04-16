@@ -93,7 +93,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         // ── Everything below scrolls ──────────────────────────────────────
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: 120),
+            padding: const EdgeInsets.only(bottom: 160),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
