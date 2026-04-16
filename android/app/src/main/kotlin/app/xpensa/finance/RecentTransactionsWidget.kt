@@ -3,13 +3,14 @@ package app.xpensa.finance
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.os.Build
+import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
+import es.antonborri.home_widget.HomeWidgetPlugin
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.NumberFormat
@@ -23,7 +24,7 @@ import kotlin.math.abs
  *
  * Shows the last 5 transactions for the selected time filter
  * (Today / Week / Month). The filter is persisted per-widget-instance
- * in SharedPreferences.
+ * in the home_widget SharedPreferences store.
  *
  * Filter buttons send a broadcast back to this receiver so the widget
  * updates without opening the app.
@@ -52,10 +53,7 @@ class RecentTransactionsWidget : AppWidgetProvider() {
                 ?: WidgetConstants.FILTER_TODAY
 
             if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                val prefs = context.getSharedPreferences(
-                    WidgetConstants.PREFS_NAME,
-                    Context.MODE_PRIVATE,
-                )
+                val prefs = HomeWidgetPlugin.getData(context)
                 prefs.edit()
                     .putString("${WidgetConstants.KEY_TXN_FILTER_PREFIX}$widgetId", filter)
                     .apply()
@@ -71,17 +69,14 @@ class RecentTransactionsWidget : AppWidgetProvider() {
         private const val MAX_ROWS = 5
         private const val MILLIS_PER_DAY = 24L * 60 * 60 * 1000
 
-        /** Called both from [onUpdate] and from [MainActivity.refreshAllWidgets]. */
+        /** Called both from [onUpdate] and from filter-chip broadcast handling. */
         fun updateWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
             widgetId: Int,
         ) {
             try {
-                val prefs = context.getSharedPreferences(
-                    WidgetConstants.PREFS_NAME,
-                    Context.MODE_PRIVATE,
-                )
+                val prefs = HomeWidgetPlugin.getData(context)
 
                 val currentFilter = prefs.getString(
                     "${WidgetConstants.KEY_TXN_FILTER_PREFIX}$widgetId",
@@ -117,7 +112,7 @@ class RecentTransactionsWidget : AppWidgetProvider() {
                 // ── "Open" button taps the app home ──────────────────────
                 views.setOnClickPendingIntent(
                     R.id.widget_rt_open_app,
-                    buildAppActionIntent(context, "open_app", widgetId * 100),
+                    buildAppActionIntent(context, "open_app"),
                 )
 
                 // ── Populate rows ─────────────────────────────────────────
@@ -182,7 +177,7 @@ class RecentTransactionsWidget : AppWidgetProvider() {
                         // Row tap opens app
                         views.setOnClickPendingIntent(
                             row.container,
-                            buildAppActionIntent(context, "open_app", widgetId * 100 + i + 1),
+                            buildAppActionIntent(context, "open_app"),
                         )
                     } else {
                         views.setViewVisibility(row.container, View.GONE)
@@ -220,7 +215,7 @@ class RecentTransactionsWidget : AppWidgetProvider() {
                 Triple(R.id.widget_rt_filter_week, WidgetConstants.FILTER_WEEK, "Week"),
                 Triple(R.id.widget_rt_filter_month, WidgetConstants.FILTER_MONTH, "Month"),
             )
-            for ((id, value, label) in filters) {
+            for ((id, value, _) in filters) {
                 val isSelected = value == activeFilter
                 views.setInt(
                     id,
@@ -270,7 +265,6 @@ class RecentTransactionsWidget : AppWidgetProvider() {
         }
 
         private fun filterTransactions(txns: List<Transaction>, filter: String): List<Transaction> {
-            val now = Calendar.getInstance()
             val cutoffMs: Long = when (filter) {
                 WidgetConstants.FILTER_TODAY -> {
                     Calendar.getInstance().apply {
@@ -379,45 +373,29 @@ class RecentTransactionsWidget : AppWidgetProvider() {
                 putExtra(WidgetConstants.EXTRA_WIDGET_ID, widgetId)
                 putExtra(WidgetConstants.EXTRA_FILTER_VALUE, filterValue)
             }
-            // Assign a unique request code: widgetId * 3 + filter index (0/1/2).
-            // This is collision-free for realistic widget counts.
             val filterIndex = when (filterValue) {
                 WidgetConstants.FILTER_TODAY -> 0
                 WidgetConstants.FILTER_WEEK -> 1
                 else -> 2
             }
             val requestCode = widgetId * 3 + filterIndex
-            return PendingIntent.getBroadcast(
-                context,
-                requestCode,
-                intent,
-                pendingIntentFlags(),
-            )
+            val flags = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+            return PendingIntent.getBroadcast(context, requestCode, intent, flags)
         }
 
         private fun buildAppActionIntent(
             context: Context,
             action: String,
-            requestCode: Int,
         ): PendingIntent {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                putExtra(WidgetConstants.EXTRA_WIDGET_ACTION, action)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            }
-            return PendingIntent.getActivity(
+            return HomeWidgetLaunchIntent.getActivity(
                 context,
-                requestCode,
-                intent,
-                pendingIntentFlags(),
+                MainActivity::class.java,
+                Uri.parse("xpensa://widget?action=$action"),
             )
-        }
-
-        private fun pendingIntentFlags(): Int {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            } else {
-                PendingIntent.FLAG_UPDATE_CURRENT
-            }
         }
     }
 }

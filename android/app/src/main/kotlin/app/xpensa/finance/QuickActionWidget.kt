@@ -4,9 +4,10 @@ import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
-import android.content.Intent
-import android.os.Build
+import android.net.Uri
 import android.widget.RemoteViews
+import es.antonborri.home_widget.HomeWidgetLaunchIntent
+import es.antonborri.home_widget.HomeWidgetPlugin
 import kotlin.math.abs
 import java.text.NumberFormat
 import java.util.Locale
@@ -19,8 +20,8 @@ import java.util.Locale
  *   • Scan QR / receipt
  *   • Voice entry
  *
- * Data is read from SharedPreferences (key-space: [WidgetConstants.PREFS_NAME])
- * which is written by [MainActivity] via the Flutter MethodChannel.
+ * Data is read from the home_widget SharedPreferences store via
+ * [HomeWidgetPlugin.getData], written from Flutter via [home_widget].
  */
 class QuickActionWidget : AppWidgetProvider() {
 
@@ -42,13 +43,15 @@ class QuickActionWidget : AppWidgetProvider() {
             widgetId: Int,
         ) {
             try {
-                val prefs = context.getSharedPreferences(
-                    WidgetConstants.PREFS_NAME,
-                    Context.MODE_PRIVATE,
-                )
+                val prefs = HomeWidgetPlugin.getData(context)
 
                 val hasData = prefs.contains(WidgetConstants.KEY_LAST_SYNCED)
-                val rawBalance = prefs.getFloat(WidgetConstants.KEY_TOTAL_BALANCE, 0f).toDouble()
+                // home_widget stores Double values as raw Long bits.
+                val rawLong = prefs.getLong(
+                    WidgetConstants.KEY_TOTAL_BALANCE,
+                    java.lang.Double.doubleToRawLongBits(0.0),
+                )
+                val rawBalance = java.lang.Double.longBitsToDouble(rawLong)
                 val symbol = prefs.getString(WidgetConstants.KEY_CURRENCY_SYMBOL, "₹") ?: "₹"
 
                 val balanceText = if (hasData) {
@@ -64,29 +67,29 @@ class QuickActionWidget : AppWidgetProvider() {
                 // Balance area taps → open app home
                 views.setOnClickPendingIntent(
                     R.id.widget_qa_header,
-                    buildActionIntent(context, "open_app", widgetId * 10),
+                    buildActionIntent(context, "open_app"),
                 )
 
                 // Individual action buttons
                 views.setOnClickPendingIntent(
                     R.id.widget_qa_add_expense,
-                    buildActionIntent(context, "add_expense", widgetId * 10 + 1),
+                    buildActionIntent(context, "add_expense"),
                 )
                 views.setOnClickPendingIntent(
                     R.id.widget_qa_add_income,
-                    buildActionIntent(context, "add_income", widgetId * 10 + 2),
+                    buildActionIntent(context, "add_income"),
                 )
                 views.setOnClickPendingIntent(
                     R.id.widget_qa_add_transfer,
-                    buildActionIntent(context, "add_transfer", widgetId * 10 + 3),
+                    buildActionIntent(context, "add_transfer"),
                 )
                 views.setOnClickPendingIntent(
                     R.id.widget_qa_scanner,
-                    buildActionIntent(context, "scanner", widgetId * 10 + 4),
+                    buildActionIntent(context, "scanner"),
                 )
                 views.setOnClickPendingIntent(
                     R.id.widget_qa_voice,
-                    buildActionIntent(context, "voice", widgetId * 10 + 5),
+                    buildActionIntent(context, "voice"),
                 )
 
                 appWidgetManager.updateAppWidget(widgetId, views)
@@ -103,31 +106,16 @@ class QuickActionWidget : AppWidgetProvider() {
             }
         }
 
-        /** Build a PendingIntent that starts [MainActivity] with [widgetAction] stored as an extra. */
+        /** Build a PendingIntent that launches [MainActivity] via the home_widget action URI. */
         private fun buildActionIntent(
             context: Context,
             widgetAction: String,
-            requestCode: Int,
         ): PendingIntent {
-            val intent = Intent(context, MainActivity::class.java).apply {
-                putExtra(WidgetConstants.EXTRA_WIDGET_ACTION, widgetAction)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-            }
-            return PendingIntent.getActivity(
+            return HomeWidgetLaunchIntent.getActivity(
                 context,
-                requestCode,
-                intent,
-                pendingIntentFlags(),
+                MainActivity::class.java,
+                Uri.parse("xpensa://widget?action=$widgetAction"),
             )
-        }
-
-        private fun pendingIntentFlags(): Int {
-            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            } else {
-                PendingIntent.FLAG_UPDATE_CURRENT
-            }
         }
 
         private fun formatBalance(symbol: String, amount: Double): String {

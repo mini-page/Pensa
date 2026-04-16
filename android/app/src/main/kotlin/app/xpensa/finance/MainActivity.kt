@@ -1,11 +1,7 @@
 package app.xpensa.finance
 
 import android.app.Activity
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.speech.RecognizerIntent
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -18,10 +14,6 @@ class MainActivity : FlutterActivity() {
     private var voiceResultCallback: MethodChannel.Result? = null
     private val voiceRequestCode = 0xA1CE
 
-    // ── Widget action routing ──────────────────────────────────────────
-    // Stores the most-recent widget action string until Flutter reads it.
-    private var pendingWidgetAction: String? = null
-
     // ── MethodChannel ─────────────────────────────────────────────────
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -32,46 +24,6 @@ class MainActivity : FlutterActivity() {
         ).setMethodCallHandler { call, result ->
             when (call.method) {
 
-                // Flutter → Android: write widget data to SharedPreferences and refresh widgets
-                "syncWidgetData" -> {
-                    val prefs = getSharedPreferences(
-                        WidgetConstants.PREFS_NAME,
-                        Context.MODE_PRIVATE,
-                    )
-                    prefs.edit().apply {
-                        val balance = call.argument<Double>("totalBalance") ?: 0.0
-                        putFloat(WidgetConstants.KEY_TOTAL_BALANCE, balance.toFloat())
-                        putString(
-                            WidgetConstants.KEY_CURRENCY_SYMBOL,
-                            call.argument<String>("currencySymbol") ?: "₹",
-                        )
-                        putString(
-                            WidgetConstants.KEY_TRANSACTIONS,
-                            call.argument<String>("transactions") ?: "[]",
-                        )
-                        putLong(
-                            WidgetConstants.KEY_LAST_SYNCED,
-                            call.argument<Long>("lastSynced")
-                                ?: System.currentTimeMillis(),
-                        )
-                        apply()
-                    }
-                    refreshAllWidgets()
-                    result.success(null)
-                }
-
-                // Flutter → Android: return the pending widget action (consumes it)
-                "getPendingAction" -> {
-                    result.success(pendingWidgetAction)
-                    pendingWidgetAction = null
-                }
-
-                // Flutter → Android: clear any stored pending action
-                "clearPendingAction" -> {
-                    pendingWidgetAction = null
-                    result.success(null)
-                }
-
                 // Flutter → Android: launch the system speech recogniser
                 "startVoiceInput" -> {
                     voiceResultCallback = result
@@ -81,19 +33,6 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
-    }
-
-    // ── Activity lifecycle ─────────────────────────────────────────────
-
-    override fun onResume() {
-        super.onResume()
-        extractWidgetAction(intent)
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        setIntent(intent)          // Keep getIntent() current for future onResume calls
-        extractWidgetAction(intent)
     }
 
     // ── Voice recognition ──────────────────────────────────────────────
@@ -124,40 +63,5 @@ class MainActivity : FlutterActivity() {
             return
         }
         super.onActivityResult(requestCode, resultCode, data)
-    }
-
-    // ── Helpers ────────────────────────────────────────────────────────
-
-    /**
-     * Read a `widget_action` extra from [incomingIntent] and store it in
-     * [pendingWidgetAction] so Flutter can poll it via `getPendingAction`.
-     *
-     * The extra is removed from the Intent immediately after reading so that
-     * re-entrant calls (e.g. multiple onResume cycles with the same Intent
-     * object) do not produce duplicate actions.
-     */
-    private fun extractWidgetAction(incomingIntent: Intent?) {
-        val action = incomingIntent?.getStringExtra(WidgetConstants.EXTRA_WIDGET_ACTION)
-            ?: return
-        // Consume the extra to prevent double-processing on subsequent onResume calls.
-        incomingIntent.removeExtra(WidgetConstants.EXTRA_WIDGET_ACTION)
-        pendingWidgetAction = action
-    }
-
-    /** Push fresh RemoteViews to every placed instance of both widget types. */
-    private fun refreshAllWidgets() {
-        val manager = AppWidgetManager.getInstance(this)
-
-        val qaName = ComponentName(this, QuickActionWidget::class.java)
-        val qaIds = manager.getAppWidgetIds(qaName)
-        if (qaIds.isNotEmpty()) {
-            QuickActionWidget().onUpdate(this, manager, qaIds)
-        }
-
-        val rtName = ComponentName(this, RecentTransactionsWidget::class.java)
-        val rtIds = manager.getAppWidgetIds(rtName)
-        if (rtIds.isNotEmpty()) {
-            RecentTransactionsWidget().onUpdate(this, manager, rtIds)
-        }
     }
 }

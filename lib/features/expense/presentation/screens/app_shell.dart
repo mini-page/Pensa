@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:home_widget/home_widget.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/widget_sync_service.dart';
@@ -24,20 +27,22 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell>
-    with WidgetsBindingObserver {
+class _AppShellState extends ConsumerState<AppShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<PowerFabState> _fabKey = GlobalKey<PowerFabState>();
   int _selectedIndex = 0;
   bool _fabOpen = false;
+  StreamSubscription<Uri?>? _widgetClickedSub;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    // Listen for widget taps while the app is running (foreground/background).
+    _widgetClickedSub = HomeWidget.widgetClicked.listen(_handleWidgetUri);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkWhatsNew();
-      _handlePendingWidgetAction();
+      // Handle the case where the app was cold-launched by a widget tap.
+      HomeWidget.initiallyLaunchedFromHomeWidget().then(_handleWidgetUri);
       // Perform an initial widget sync now that providers are available.
       _syncWidgetDataNow();
     });
@@ -45,17 +50,8 @@ class _AppShellState extends ConsumerState<AppShell>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    _widgetClickedSub?.cancel();
     super.dispose();
-  }
-
-  /// Re-check for a widget action when the app comes back to the foreground
-  /// (e.g. the user tapped a widget button while the app was backgrounded).
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _handlePendingWidgetAction();
-    }
   }
 
   void _checkWhatsNew() {
@@ -289,12 +285,18 @@ class _AppShellState extends ConsumerState<AppShell>
 
   // ── Widget action routing ────────────────────────────────────────────
 
-  /// Polls the native side for a pending widget action and navigates to the
-  /// appropriate screen.  Called on first frame and on every foreground resume.
-  Future<void> _handlePendingWidgetAction() async {
-    final action = await WidgetSyncService.getPendingAction();
-    if (action == null || !mounted) return;
+  /// Handles a widget-click URI emitted by [HomeWidget.widgetClicked] or
+  /// returned by [HomeWidget.initiallyLaunchedFromHomeWidget].
+  ///
+  /// Expected URI format: `xpensa://widget?action=<action>`
+  void _handleWidgetUri(Uri? uri) {
+    if (uri == null || !mounted) return;
+    final action = uri.queryParameters['action'];
+    if (action == null) return;
+    _routeWidgetAction(action);
+  }
 
+  Future<void> _routeWidgetAction(String action) async {
     switch (action) {
       case 'add_expense':
         await AppRoutes.pushAddExpense(
