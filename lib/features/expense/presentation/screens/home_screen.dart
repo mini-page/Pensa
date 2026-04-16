@@ -135,9 +135,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             onLongPress: () => _showChipOptions(
                               context,
                               amount: amount,
-                              isLocaleDefault: localeAmounts.contains(amount),
+                              // A value that was re-added as custom after
+                              // hiding its locale default lives in customAmounts
+                              // even though localeAmounts also contains it.
+                              // Treat it as custom so the right storage path
+                              // (setCustomQuickAmounts) is used on delete/edit.
+                              isLocaleDefault: localeAmounts.contains(amount) &&
+                                  !customAmounts.contains(amount),
                               customAmounts: customAmounts,
                               hiddenDefaults: hiddenDefaults,
+                              quickAmounts: quickAmounts,
                             ),
                           ),
                         );
@@ -146,6 +153,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         onTap: () => _showAddCustomAmountDialog(
                           context,
                           customAmounts: customAmounts,
+                          quickAmounts: quickAmounts,
                         ),
                       ),
                     ],
@@ -380,6 +388,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _showAddCustomAmountDialog(
     BuildContext context, {
     required List<double> customAmounts,
+    required List<double> quickAmounts,
   }) async {
     final controller = TextEditingController();
 
@@ -404,11 +413,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 autofocus: true,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Amount, e.g. 75',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.grey.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.grey.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.7),
+                    ),
+                  ),
                   contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
               ),
             ),
@@ -429,6 +455,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     if (newAmount == null || !mounted) return;
 
+    // Duplicate guard — value already visible as a chip.
+    if (quickAmounts.contains(newAmount)) return;
+
     final updated = [...customAmounts, newAmount]..sort();
     await ref
         .read(appPreferencesControllerProvider)
@@ -441,6 +470,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required bool isLocaleDefault,
     required List<double> customAmounts,
     required List<double> hiddenDefaults,
+    required List<double> quickAmounts,
   }) async {
     final action = await showModalBottomSheet<String>(
       context: context,
@@ -497,6 +527,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         isLocaleDefault: isLocaleDefault,
         customAmounts: customAmounts,
         hiddenDefaults: hiddenDefaults,
+        quickAmounts: quickAmounts,
       );
     }
   }
@@ -507,6 +538,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required bool isLocaleDefault,
     required List<double> customAmounts,
     required List<double> hiddenDefaults,
+    required List<double> quickAmounts,
   }) async {
     final displayText = currentAmount % 1 == 0
         ? currentAmount.toInt().toString()
@@ -534,11 +566,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 autofocus: true,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'New amount',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.grey.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Colors.grey.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: Theme.of(ctx).colorScheme.primary.withValues(alpha: 0.7),
+                    ),
+                  ),
                   contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
               ),
             ),
@@ -558,6 +607,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
 
     if (newAmount == null || !mounted) return;
+
+    // Duplicate guard — skip if the new value is already visible as another chip.
+    if (newAmount != currentAmount && quickAmounts.contains(newAmount)) return;
 
     if (isLocaleDefault) {
       // Hide the old locale default and add the edited value as a custom amount.
