@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../provider/expense_providers.dart';
 import '../provider/preferences_providers.dart';
 import 'stats/stats_widgets.dart';
@@ -35,71 +36,45 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final privacyModeEnabled = ref.watch(privacyModeEnabledProvider);
     final currencyFormat = ref.watch(currencyFormatProvider);
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.lg,
-          AppSpacing.xl,
-          AppSpacing.lg,
-          120,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // Header
-            const Text(
-              'ANALYTICS',
-              style: TextStyle(
-                color: AppColors.primaryBlue,
-                letterSpacing: 1.8,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        AppPageHeader(
+          eyebrow: 'Analytics',
+          title: 'Financial Insights',
+          trailing: Tooltip(
+            message: 'Export coming soon',
+            child: Opacity(
+              opacity: 0.5,
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  color: AppColors.surfaceAccent,
+                ),
+                child: const Icon(
+                  Icons.download_rounded,
+                  color: AppColors.primaryBlue,
+                ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Text(
-                    'Financial Insights',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textDark,
-                        ),
-                  ),
-                ),
-                Tooltip(
-                  message: 'Export coming soon',
-                  child: Opacity(
-                    opacity: 0.5,
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppRadii.md),
-                        color: AppColors.surfaceAccent,
-                      ),
-                      child: const Icon(
-                        Icons.download_rounded,
-                        color: AppColors.primaryBlue,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+          ),
+          bottom: AnalyticsPillTabs(
+            tabs: _tabLabels,
+            selected: _selectedTab,
+            onChanged: (index) => setState(() => _selectedTab = index),
+          ),
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.lg,
+              AppSpacing.lg,
+              120,
             ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // Tab selector
-            AnalyticsPillTabs(
-              tabs: _tabLabels,
-              selected: _selectedTab,
-              onChanged: (index) => setState(() => _selectedTab = index),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-
-            // Glass card
-            AnalyticsGlassCard(
+            child: AnalyticsGlassCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
@@ -160,9 +135,9 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 ],
               ),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

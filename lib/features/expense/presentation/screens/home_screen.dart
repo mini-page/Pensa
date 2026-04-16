@@ -67,30 +67,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final locale = ref.watch(localeProvider);
     final quickAmounts = _localeQuickAmounts(locale);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.only(bottom: 120),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          HomeHeader(
-            stats: stats,
-            accountSummary: accountSummary,
-            budgets: budgets,
-            currencyFormat: currencyFormat,
-            privacyModeEnabled: privacyModeEnabled,
-            onMenuPressed: () => Scaffold.of(context).openDrawer(),
-            onSearchPressed: () => AppRoutes.pushTransactionSearch(context),
-            onTogglePrivacy: () {
-              ref
-                  .read(appPreferencesControllerProvider)
-                  .setPrivacyMode(!privacyModeEnabled);
-            },
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        HomeHeader(
+          stats: stats,
+          accountSummary: accountSummary,
+          budgets: budgets,
+          currencyFormat: currencyFormat,
+          privacyModeEnabled: privacyModeEnabled,
+          onMenuPressed: () => Scaffold.of(context).openDrawer(),
+          onSearchPressed: () => AppRoutes.pushTransactionSearch(context),
+          onTogglePrivacy: () {
+            ref
+                .read(appPreferencesControllerProvider)
+                .setPrivacyMode(!privacyModeEnabled);
+          },
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 120),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
                 const SizedBox(height: 8),
                 QuickActionBar(
                   actions: const <QuickActionItem>[
@@ -227,11 +228,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onDelete: () => _confirmDeleteExpense(expense),
                     );
                   }),
-              ],
+                ],
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

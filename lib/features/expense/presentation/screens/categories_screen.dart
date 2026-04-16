@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../routes/app_routes.dart';
+import '../../../../shared/widgets/app_page_header.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/expense_model.dart';
 import '../provider/account_providers.dart';
@@ -64,78 +65,29 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       disabledAccountIds: disabledAccountIds,
     );
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 124),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: const <BoxShadow>[
-                      BoxShadow(
-                        color: AppColors.cardShadow,
-                        blurRadius: 14,
-                        offset: Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child:
-                      Icon(_summaryIcon(_mode), color: AppColors.primaryBlue),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        summaryAmount,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textDark,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w900,
-                          height: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        summaryLabel,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _ModeTabs(
-              mode: _mode,
-              onChanged: (mode) {
-                setState(() {
-                  _mode = mode;
-                });
-              },
-            ),
-            if ((_mode == _BoardMode.expenses && budgetState.isLoading) ||
-                (_mode == _BoardMode.accounts && accountState.isLoading))
-              const Padding(
-                padding: EdgeInsets.only(top: 12),
-                child: LinearProgressIndicator(minHeight: 3),
-              ),
-            const SizedBox(height: 16),
-            LayoutBuilder(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        AppPageHeader(
+          eyebrow: 'Categories',
+          title: summaryAmount,
+          subtitle: summaryLabel,
+          bottom: _ModeTabs(
+            mode: _mode,
+            onChanged: (mode) {
+              setState(() {
+                _mode = mode;
+              });
+            },
+          ),
+        ),
+        if ((_mode == _BoardMode.expenses && budgetState.isLoading) ||
+            (_mode == _BoardMode.accounts && accountState.isLoading))
+          const LinearProgressIndicator(minHeight: 3),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 124),
+            child: LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
                 final crossAxisCount = width >= 900
@@ -187,9 +139,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                 );
               },
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -345,17 +297,6 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
         return 'Income this month';
       case _BoardMode.accounts:
         return 'Tracked account balance';
-    }
-  }
-
-  IconData _summaryIcon(_BoardMode mode) {
-    switch (mode) {
-      case _BoardMode.expenses:
-        return Icons.grid_view_rounded;
-      case _BoardMode.income:
-        return Icons.arrow_downward_rounded;
-      case _BoardMode.accounts:
-        return Icons.account_balance_wallet_outlined;
     }
   }
 
