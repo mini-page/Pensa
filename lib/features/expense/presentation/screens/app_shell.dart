@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/widget_sync_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../../shared/widgets/floating_nav_bar.dart';
+import '../../data/models/expense_model.dart';
+import '../provider/expense_providers.dart';
 import '../provider/preferences_providers.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/power_pill_menu.dart';
@@ -12,6 +15,7 @@ import 'accounts_screen.dart';
 import 'categories_screen.dart';
 import 'home_screen.dart';
 import 'stats_screen.dart';
+import 'voice_entry_screen.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -20,7 +24,8 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> {
+class _AppShellState extends ConsumerState<AppShell>
+    with WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<PowerFabState> _fabKey = GlobalKey<PowerFabState>();
   int _selectedIndex = 0;
@@ -29,8 +34,26 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   void initState() {
     super.initState();
-    // Show What's New modal (N8) if this version hasn't been seen yet
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkWhatsNew());
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkWhatsNew();
+      _handlePendingWidgetAction();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Re-check for a widget action when the app comes back to the foreground
+  /// (e.g. the user tapped a widget button while the app was backgrounded).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _handlePendingWidgetAction();
+    }
   }
 
   void _checkWhatsNew() {
@@ -175,6 +198,17 @@ class _AppShellState extends ConsumerState<AppShell> {
   Widget build(BuildContext context) {
     final pages = _buildPages();
 
+    // ── Sync widget data whenever accounts / expenses / currency change ──
+    ref.listen<WidgetDataPayload?>(
+      widgetDataPayloadProvider,
+      (_, payload) {
+        if (payload != null) {
+          WidgetSyncService.syncData(payload);
+        }
+      },
+      fireImmediately: true,
+    );
+
     return Scaffold(
       key: _scaffoldKey,
       extendBody: true,
@@ -241,6 +275,42 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   Future<void> _openAddExpenseScreen() async {
     await AppRoutes.pushAddExpense(context);
+  }
+
+  // ── Widget action routing ────────────────────────────────────────────
+
+  /// Polls the native side for a pending widget action and navigates to the
+  /// appropriate screen.  Called on first frame and on every foreground resume.
+  Future<void> _handlePendingWidgetAction() async {
+    final action = await WidgetSyncService.getPendingAction();
+    if (action == null || !mounted) return;
+
+    switch (action) {
+      case 'add_expense':
+        await AppRoutes.pushAddExpense(
+          context,
+          initialType: TransactionType.expense,
+        );
+      case 'add_income':
+        await AppRoutes.pushAddExpense(
+          context,
+          initialType: TransactionType.income,
+        );
+      case 'add_transfer':
+        await AppRoutes.pushAddExpense(
+          context,
+          initialType: TransactionType.transfer,
+        );
+      case 'scanner':
+        if (mounted) await AppRoutes.pushScanner(context);
+      case 'voice':
+        if (mounted) await _showVoiceEntry();
+      // 'open_app' — just bring app to foreground, no extra navigation needed
+    }
+  }
+
+  Future<void> _showVoiceEntry() async {
+    await showVoiceEntrySheet(context);
   }
 }
 

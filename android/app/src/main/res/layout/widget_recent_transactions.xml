@@ -62,7 +62,7 @@
             android:background="@drawable/widget_chip_unselected_bg"
             android:textColor="@color/widget_chip_unselected_text" />
 
-        <android.widget.Space
+        <View
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:layout_weight="1" />

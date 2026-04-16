@@ -3,6 +3,7 @@ import 'dart:developer' as dev;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/services/widget_sync_service.dart';
 import '../../data/datasource/expense_local_datasource.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/expense_model.dart';
@@ -11,6 +12,7 @@ import '../../domain/repositories/account_repository.dart';
 import '../../domain/repositories/expense_repository.dart';
 import '../../presentation/screens/stats/stats_widgets.dart';
 import 'account_providers.dart';
+import 'preferences_providers.dart';
 
 final expenseLocalDatasourceProvider = Provider<ExpenseLocalDatasource>((ref) {
   return ExpenseLocalDatasource();
@@ -370,3 +372,46 @@ class ExpenseStats {
   final Map<String, double> categoryTotals;
   final Map<String, double> incomeCategoryTotals;
 }
+
+// ── Widget sync provider ───────────────────────────────────────────────────
+
+/// Derives the [WidgetDataPayload] from live Riverpod data.
+///
+/// Returns `null` while either accounts or expenses are still loading.
+/// [AppShell] watches this via `ref.listen` and forwards changes to
+/// [WidgetSyncService.syncData] which writes them to Android SharedPreferences
+/// so the launcher widgets can display fresh data without opening the app.
+final widgetDataPayloadProvider = Provider<WidgetDataPayload?>((ref) {
+  final accounts = ref.watch(accountListProvider).value;
+  final expenses = ref.watch(expenseListProvider).value;
+  final symbol = ref.watch(currencySymbolProvider);
+
+  if (accounts == null || expenses == null) return null;
+
+  final totalBalance =
+      accounts.fold<double>(0.0, (sum, a) => sum + a.balance);
+
+  final sorted = (expenses.toList()
+        ..sort((a, b) => b.date.compareTo(a.date)))
+      .take(20)
+      .toList(growable: false);
+
+  final txnList = sorted
+      .map(
+        (e) => <String, dynamic>{
+          'id': e.id,
+          'amount': e.amount,
+          'category': e.category,
+          'type': e.type.storageValue,
+          'dateMs': e.date.millisecondsSinceEpoch,
+          'note': e.note,
+        },
+      )
+      .toList(growable: false);
+
+  return WidgetDataPayload(
+    totalBalance: totalBalance,
+    currencySymbol: symbol,
+    transactions: txnList,
+  );
+});
