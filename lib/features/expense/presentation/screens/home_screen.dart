@@ -66,11 +66,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final localeAmounts = _localeQuickAmounts(locale);
     final customAmounts = ref.watch(customQuickAmountsProvider);
     final hiddenDefaults = ref.watch(hiddenDefaultAmountsProvider);
-    // Merge: locale defaults (minus hidden) first, then custom (deduplicated),
-    // sorted ascending so newly-added amounts slot into the right position.
+    // Merge: locale defaults (minus hidden and minus any already-custom) first,
+    // then ALL custom amounts — sorted ascending so newly-added amounts slot
+    // into the right position.  Custom amounts are always shown even if their
+    // value coincidentally matches a locale default.
     final quickAmounts = [
-      ...localeAmounts.where((a) => !hiddenDefaults.contains(a)),
-      ...customAmounts.where((a) => !localeAmounts.contains(a)),
+      ...localeAmounts.where(
+        (a) => !hiddenDefaults.contains(a) && !customAmounts.contains(a),
+      ),
+      ...customAmounts,
     ]..sort();
 
     final unreadCount = ref.watch(unreadNotificationCountProvider);
@@ -128,7 +132,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               initialAmount: amount,
                               initialDate: _selectedDate,
                             ),
-                            onLongPress: () => _deleteChip(
+                            onLongPress: () => _showChipOptions(
                               context,
                               amount: amount,
                               isLocaleDefault: localeAmounts.contains(amount),
@@ -378,99 +382,199 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required List<double> customAmounts,
   }) async {
     final controller = TextEditingController();
-    final formKey = GlobalKey<FormState>();
 
-    final confirmed = await showDialog<bool>(
+    final newAmount = await showModalBottomSheet<double>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add quick amount'),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: controller,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              labelText: 'Amount',
-              hintText: 'e.g. 75',
-            ),
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Enter an amount';
-              }
-              final parsed = double.tryParse(value.trim());
-              if (parsed == null || parsed <= 0) {
-                return 'Enter a valid positive number';
-              }
-              return null;
-            },
-          ),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.viewInsetsOf(ctx).bottom + 16,
         ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.of(ctx).pop(true);
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: TextField(
+                controller: controller,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  hintText: 'Amount, e.g. 75',
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: () {
+                final parsed = double.tryParse(controller.text.trim());
+                if (parsed != null && parsed > 0) {
+                  Navigator.of(ctx).pop(parsed);
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        ),
       ),
     );
 
-    if (confirmed != true || !mounted) return;
+    if (newAmount == null || !mounted) return;
 
-    final parsed = double.tryParse(controller.text.trim());
-    if (parsed == null || parsed <= 0) return;
-
-    final updated = [...customAmounts, parsed]..sort();
+    final updated = [...customAmounts, newAmount]..sort();
     await ref
         .read(appPreferencesControllerProvider)
         .setCustomQuickAmounts(updated);
   }
 
-  Future<void> _deleteChip(
+  Future<void> _showChipOptions(
     BuildContext context, {
     required double amount,
     required bool isLocaleDefault,
     required List<double> customAmounts,
     required List<double> hiddenDefaults,
   }) async {
-    final confirmed = await showDialog<bool>(
+    final action = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Remove quick amount'),
-        content: Text(
-          'Remove this chip from the quick-add row?',
-          style: const TextStyle(height: 1.5),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Edit'),
+                onTap: () => Navigator.of(ctx).pop('edit'),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                ),
+                title: const Text(
+                  'Delete',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () => Navigator.of(ctx).pop('delete'),
+              ),
+            ],
+          ),
         ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Remove'),
-          ),
-        ],
       ),
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!mounted) return;
+
+    if (action == 'delete') {
+      if (isLocaleDefault) {
+        final updated = [...hiddenDefaults, amount];
+        await ref
+            .read(appPreferencesControllerProvider)
+            .setHiddenDefaultAmounts(updated);
+      } else {
+        final updated = customAmounts.where((a) => a != amount).toList();
+        await ref
+            .read(appPreferencesControllerProvider)
+            .setCustomQuickAmounts(updated);
+      }
+    } else if (action == 'edit') {
+      if (!mounted) return;
+      await _showEditAmountDialog(
+        context,
+        currentAmount: amount,
+        isLocaleDefault: isLocaleDefault,
+        customAmounts: customAmounts,
+        hiddenDefaults: hiddenDefaults,
+      );
+    }
+  }
+
+  Future<void> _showEditAmountDialog(
+    BuildContext context, {
+    required double currentAmount,
+    required bool isLocaleDefault,
+    required List<double> customAmounts,
+    required List<double> hiddenDefaults,
+  }) async {
+    final displayText = currentAmount % 1 == 0
+        ? currentAmount.toInt().toString()
+        : currentAmount.toString();
+    final controller = TextEditingController(text: displayText);
+
+    final newAmount = await showModalBottomSheet<double>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          MediaQuery.viewInsetsOf(ctx).bottom + 16,
+        ),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: TextField(
+                controller: controller,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  hintText: 'New amount',
+                  border: OutlineInputBorder(),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: () {
+                final parsed = double.tryParse(controller.text.trim());
+                if (parsed != null && parsed > 0) {
+                  Navigator.of(ctx).pop(parsed);
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (newAmount == null || !mounted) return;
 
     if (isLocaleDefault) {
-      final updated = [...hiddenDefaults, amount];
+      // Hide the old locale default and add the edited value as a custom amount.
+      final updatedHidden = [...hiddenDefaults, currentAmount];
+      final updatedCustom = [...customAmounts, newAmount]..sort();
       await ref
           .read(appPreferencesControllerProvider)
-          .setHiddenDefaultAmounts(updated);
+          .setHiddenDefaultAmounts(updatedHidden);
+      if (!mounted) return;
+      await ref
+          .read(appPreferencesControllerProvider)
+          .setCustomQuickAmounts(updatedCustom);
     } else {
-      final updated = customAmounts.where((a) => a != amount).toList();
+      final updated = [
+        ...customAmounts.where((a) => a != currentAmount),
+        newAmount,
+      ]..sort();
       await ref
           .read(appPreferencesControllerProvider)
           .setCustomQuickAmounts(updated);
