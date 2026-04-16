@@ -70,29 +70,28 @@ class _TransactionCardState extends ConsumerState<TransactionCard> {
     final hasTags = TagParser.hasTags(widget.expense.note);
     final tags = hasTags ? TagParser.extractTags(widget.expense.note) : <String>[];
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        child: InkWell(
-          onTap: () => setState(() => _expanded = !_expanded),
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeInOut,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeInOut,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(
-                    color: AppColors.cardShadow,
-                    blurRadius: 18,
-                    offset: Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
+          boxShadow: const <BoxShadow>[
+            BoxShadow(
+              color: AppColors.cardShadow,
+              blurRadius: 18,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          child: InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(24),
+            child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   // ── Collapsed row ─────────────────────────────────────────
@@ -286,7 +285,6 @@ class _TransactionCardState extends ConsumerState<TransactionCard> {
                     ),
                   ],
                 ],
-              ),
             ),
           ),
         ),
