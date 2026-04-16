@@ -28,7 +28,9 @@ class CategoriesScreen extends ConsumerStatefulWidget {
   ConsumerState<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
+class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   _BoardMode _mode = _BoardMode.expenses;
 
   static const List<AppTabItem> _categoryTabs = <AppTabItem>[
@@ -36,6 +38,25 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     AppTabItem(label: 'Income', icon: Icons.arrow_downward_rounded),
     AppTabItem(label: 'Account', icon: Icons.account_balance_wallet_outlined),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _categoryTabs.length, vsync: this);
+    _tabController.addListener(() {
+      final newIndex = _tabController.index;
+      final newMode = _BoardMode.values[newIndex];
+      if (_mode != newMode) {
+        setState(() => _mode = newMode);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,15 +82,6 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
       masked: privacyModeEnabled,
     );
     final summaryLabel = _summaryLabel(_mode);
-    final cards = _buildCards(
-      mode: _mode,
-      stats: stats,
-      budgets: budgets,
-      accounts: accounts,
-      disabledExpenseCategories: disabledExpenseCategories,
-      disabledIncomeCategories: disabledIncomeCategories,
-      disabledAccountIds: disabledAccountIds,
-    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,6 +97,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
               setState(() {
                 _mode = _BoardMode.values[index];
               });
+              _tabController.animateTo(index);
             },
           ),
         ),
@@ -92,63 +105,91 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
             (_mode == _BoardMode.accounts && accountState.isLoading))
           const LinearProgressIndicator(minHeight: 3),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 124),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final width = constraints.maxWidth;
-                final crossAxisCount = width >= 900
-                    ? 4
-                    : width >= 640
-                        ? 3
-                        : 2;
-                final ratio = width >= 900
-                    ? 1.35
-                    : width >= 640
-                        ? 1.28
-                        : 1.22;
-
-                return GridView.builder(
-                  itemCount: cards.length + 1,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: ratio,
-                  ),
-                  itemBuilder: (context, index) {
-                    if (index == cards.length) {
-                      return AddCategoryCard(
-                        onTap: _handlePrimaryActionTap,
-                        title: _actionTitle(_mode),
-                        detail: _actionDetail(_mode),
-                      );
-                    }
-
-                    final entry = cards[index];
-                    return CategoryGridCard(
-                      title: entry.title,
-                      icon: entry.icon,
-                      tone: entry.tone,
-                      amount: _displayAmount(
-                          entry.amount, entry.amountColor, currency,
-                          masked: privacyModeEnabled),
-                      progressLabel: entry.progressLabel,
-                      progress: entry.progress,
-                      isEnabled: entry.isEnabled,
-                      onTap: entry.onTap,
-                      onToggle: entry.onToggle,
-                      amountColor: entry.amountColor,
-                    );
-                  },
-                );
-              },
-            ),
+          child: TabBarView(
+            controller: _tabController,
+            children: _BoardMode.values.map((mode) {
+              final modeCards = _buildCards(
+                mode: mode,
+                stats: stats,
+                budgets: budgets,
+                accounts: accounts,
+                disabledExpenseCategories: disabledExpenseCategories,
+                disabledIncomeCategories: disabledIncomeCategories,
+                disabledAccountIds: disabledAccountIds,
+              );
+              return _buildModeScrollPane(
+                mode: mode,
+                cards: modeCards,
+                currency: currency,
+                privacyModeEnabled: privacyModeEnabled,
+              );
+            }).toList(growable: false),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildModeScrollPane({
+    required _BoardMode mode,
+    required List<CategoryGridData> cards,
+    required NumberFormat currency,
+    required bool privacyModeEnabled,
+  }) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 124),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final crossAxisCount = width >= 900
+              ? 4
+              : width >= 640
+                  ? 3
+                  : 2;
+          final ratio = width >= 900
+              ? 1.35
+              : width >= 640
+                  ? 1.28
+                  : 1.22;
+
+          return GridView.builder(
+            itemCount: cards.length + 1,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: ratio,
+            ),
+            itemBuilder: (context, index) {
+              if (index == cards.length) {
+                return AddCategoryCard(
+                  onTap: () => _handlePrimaryActionTapFor(mode),
+                  title: _actionTitle(mode),
+                  detail: _actionDetail(mode),
+                );
+              }
+
+              final entry = cards[index];
+              return CategoryGridCard(
+                title: entry.title,
+                icon: entry.icon,
+                tone: entry.tone,
+                amount: _displayAmount(
+                    entry.amount, entry.amountColor, currency,
+                    masked: privacyModeEnabled),
+                progressLabel: entry.progressLabel,
+                progress: entry.progress,
+                isEnabled: entry.isEnabled,
+                onTap: entry.onTap,
+                onToggle: entry.onToggle,
+                amountColor: entry.amountColor,
+              );
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -329,8 +370,10 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     }
   }
 
-  void _handlePrimaryActionTap() {
-    switch (_mode) {
+  void _handlePrimaryActionTap() => _handlePrimaryActionTapFor(_mode);
+
+  void _handlePrimaryActionTapFor(_BoardMode mode) {
+    switch (mode) {
       case _BoardMode.expenses:
         _openBudgetEditor(
           categoryName: expenseCategories.first.name,

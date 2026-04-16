@@ -17,7 +17,9 @@ class StatsScreen extends ConsumerStatefulWidget {
   ConsumerState<StatsScreen> createState() => _StatsScreenState();
 }
 
-class _StatsScreenState extends ConsumerState<StatsScreen> {
+class _StatsScreenState extends ConsumerState<StatsScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   int _selectedTab = 0;
   String _selectedRange = 'This Month';
 
@@ -34,6 +36,24 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     'Last 3 Months',
     'This Year',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: _analyticsTabs.length, vsync: this);
+    _tabController.addListener(() {
+      final newIndex = _tabController.index;
+      if (_selectedTab != newIndex) {
+        setState(() => _selectedTab = newIndex);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,78 +88,82 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           bottom: AppTabSwitcher(
             tabs: _analyticsTabs,
             selected: _selectedTab,
-            onChanged: (index) => setState(() => _selectedTab = index),
+            onChanged: (index) {
+              setState(() => _selectedTab = index);
+              _tabController.animateTo(index);
+            },
           ),
         ),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              120,
-            ),
-            child: AnalyticsGlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  // Tab title
-                  Text(
-                    _analyticsTabs[_selectedTab].label,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-
-                  // Range picker
-                  InkWell(
-                    borderRadius: BorderRadius.circular(AppRadii.sm),
-                    onTap: _showRangePicker,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 6,
-                        horizontal: 2,
+          child: TabBarView(
+            controller: _tabController,
+            children: List.generate(_analyticsTabs.length, (tabIndex) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  120,
+                ),
+                child: AnalyticsGlassCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      // Tab title
+                      Text(
+                        _analyticsTabs[tabIndex].label,
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark,
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Text(
-                            _selectedRange,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: AppColors.textSecondary,
-                            size: 22,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
+                      const SizedBox(height: AppSpacing.xs),
 
-                  // Tab content with animated crossfade
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeIn,
-                    child: _buildTabContent(
-                      snapshot: snapshot,
-                      currencyFormat: currencyFormat,
-                      privacyModeEnabled: privacyModeEnabled,
-                    ),
+                      // Range picker
+                      InkWell(
+                        borderRadius: BorderRadius.circular(AppRadii.sm),
+                        onTap: _showRangePicker,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 6,
+                            horizontal: 2,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              Text(
+                                _selectedRange,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: AppColors.textSecondary,
+                                size: 22,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // Tab content
+                      _buildTabContent(
+                        tabIndex: tabIndex,
+                        snapshot: snapshot,
+                        currencyFormat: currencyFormat,
+                        privacyModeEnabled: privacyModeEnabled,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            }),
           ),
         ),
       ],
@@ -147,28 +171,26 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   }
 
   Widget _buildTabContent({
+    required int tabIndex,
     required AnalyticsSnapshot snapshot,
     required NumberFormat currencyFormat,
     required bool privacyModeEnabled,
   }) {
-    switch (_selectedTab) {
+    switch (tabIndex) {
       case 0:
         return FlowTabContent(
-          key: const ValueKey<int>(0),
           snapshot: snapshot,
           currencyFormat: currencyFormat,
           privacyModeEnabled: privacyModeEnabled,
         );
       case 1:
         return SpendTabContent(
-          key: const ValueKey<int>(1),
           snapshot: snapshot,
           currencyFormat: currencyFormat,
           privacyModeEnabled: privacyModeEnabled,
         );
       case 2:
         return HabitTabContent(
-          key: const ValueKey<int>(2),
           snapshot: snapshot,
           currencyFormat: currencyFormat,
           privacyModeEnabled: privacyModeEnabled,
