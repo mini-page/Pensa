@@ -172,25 +172,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                Row(
-                  children: <Widget>[
-                    const Text(
-                      'RECENT TRANSACTIONS',
-                      style: TextStyle(
-                        color: AppColors.primaryBlue,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => _openRecordsHistoryScreen(context),
-                      child: const Text('View All'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
                 HomeDateStrip(
                   visibleDates: visibleDates,
                   selectedDate: _selectedDate,
@@ -210,7 +191,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onNext: () => _shiftWindow(7),
                   onJumpToToday: _jumpToToday,
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
+                Row(
+                  children: <Widget>[
+                    const Text(
+                      'RECENT TRANSACTIONS',
+                      style: TextStyle(
+                        color: AppColors.primaryBlue,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => _openRecordsHistoryScreen(context),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        textStyle: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      child: const Text('View All'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 if (expenseState.hasError)
                   const HomeEmptyCard(
                     title: 'Storage unavailable',
