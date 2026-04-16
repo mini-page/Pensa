@@ -160,6 +160,7 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
     String whatsNewShownVersion =
         AppPreferencesModel.defaults.whatsNewShownVersion;
     String savingsGoalsJson = AppPreferencesModel.defaults.savingsGoalsJson;
+    String customQuickAmountsJson = AppPreferencesModel.defaults.customQuickAmountsJson;
 
     try {
       if (reader.availableBytes > 0) locale = reader.readString();
@@ -190,7 +191,6 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
       if (reader.availableBytes > 0) biometricLockEnabled = reader.readBool();
       if (reader.availableBytes > 0) whatsNewShownVersion = reader.readString();
       if (reader.availableBytes > 0) savingsGoalsJson = reader.readString();
-      String customQuickAmountsJson = AppPreferencesModel.defaults.customQuickAmountsJson;
       if (reader.availableBytes > 0) customQuickAmountsJson = reader.readString();
     } catch (_) {
       // Fallback if reading fails
