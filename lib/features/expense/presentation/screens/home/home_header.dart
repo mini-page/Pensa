@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/constants/app_assets.dart';
 import '../../../../../core/theme/app_colors.dart';
-import '../../../../../core/theme/app_tokens.dart';
 import '../../provider/account_providers.dart';
 import '../../provider/expense_providers.dart';
 import '../../widgets/amount_visibility.dart';
@@ -141,7 +140,6 @@ class HomeHeader extends StatefulWidget {
     super.key,
     required this.stats,
     required this.accountSummary,
-    required this.budgets,
     required this.currencyFormat,
     required this.privacyModeEnabled,
     required this.onTogglePrivacy,
@@ -149,7 +147,6 @@ class HomeHeader extends StatefulWidget {
 
   final ExpenseStats stats;
   final AccountSummary accountSummary;
-  final Map<String, double> budgets;
   final NumberFormat currencyFormat;
   final bool privacyModeEnabled;
   final VoidCallback onTogglePrivacy;
@@ -170,32 +167,25 @@ class _HomeHeaderState extends State<HomeHeader> {
       masked: widget.privacyModeEnabled,
     );
     final bool isDeficit = stats.monthNetTotal < 0;
+    final bool isZero = stats.monthNetTotal == 0;
 
-    // H1: find the top budget category with the most activity
-    double topBudgetLimit = 0;
-    double topBudgetSpend = 0;
-    String topBudgetCategory = '';
-    for (final entry in widget.budgets.entries) {
-      final spend = stats.categoryTotals[entry.key] ?? 0;
-      if (entry.value > 0 && spend > topBudgetSpend) {
-        topBudgetSpend = spend;
-        topBudgetLimit = entry.value;
-        topBudgetCategory = entry.key;
-      }
-    }
-    final hasBudget = topBudgetLimit > 0;
-    final budgetProgress = hasBudget
-        ? (topBudgetSpend / topBudgetLimit).clamp(0.0, 1.0)
-        : 0.0;
+    // Inline surplus/deficit indicator colour & symbol
+    final Color signColor = isZero
+        ? Colors.white54
+        : isDeficit
+            ? const Color(0xFFFFA2A2)
+            : const Color(0xFFA2FFC0);
+    final String signSymbol = isZero ? '' : isDeficit ? '−' : '+';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
       decoration: const BoxDecoration(
         color: AppColors.primaryBlue,
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       child: Column(
         children: <Widget>[
+          // Label row
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -229,21 +219,43 @@ class _HomeHeaderState extends State<HomeHeader> {
             ],
           ),
           const SizedBox(height: 4),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              netTotal,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 52,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -1,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
 
-          // H2: Net worth chip (tap to reveal)
+          // Balance row — colored sign prefix + amount
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (signSymbol.isNotEmpty) ...[
+                Text(
+                  signSymbol,
+                  style: TextStyle(
+                    color: signColor,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    netTotal,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 52,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Net worth chip (tap to reveal)
           GestureDetector(
             onTap: () => setState(() => _netWorthRevealed = !_netWorthRevealed),
             child: Container(
@@ -282,105 +294,7 @@ class _HomeHeaderState extends State<HomeHeader> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
-
-          // Deficit / Surplus Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: isDeficit
-                  ? Colors.redAccent.withAlpha(40)
-                  : Colors.greenAccent.withAlpha(40),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDeficit
-                    ? Colors.redAccent.withAlpha(80)
-                    : Colors.greenAccent.withAlpha(80),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isDeficit ? Icons.arrow_drop_down : Icons.arrow_drop_up,
-                  color: isDeficit
-                      ? const Color(0xFFFFA2A2)
-                      : const Color(0xFFA2FFC0),
-                  size: 20,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isDeficit ? 'Deficit' : 'Surplus',
-                  style: TextStyle(
-                    color: isDeficit
-                        ? const Color(0xFFFFA2A2)
-                        : const Color(0xFFA2FFC0),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // H1: Budget progress bar for top active budget category
-          if (hasBudget) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(20),
-                borderRadius: BorderRadius.circular(AppRadii.lg),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          topBudgetCategory.toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        '${widget.currencyFormat.format(topBudgetSpend)} / ${widget.currencyFormat.format(topBudgetLimit)}',
-                        style: TextStyle(
-                          color: budgetProgress >= 0.9
-                              ? const Color(0xFFFFA2A2)
-                              : Colors.white70,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(3),
-                    child: LinearProgressIndicator(
-                      value: budgetProgress,
-                      backgroundColor: Colors.white.withAlpha(40),
-                      color: budgetProgress >= 0.9
-                          ? Colors.redAccent
-                          : const Color(0xFFA2FFC0),
-                      minHeight: 6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // Expense & Income Cards
           Row(
@@ -392,13 +306,9 @@ class _HomeHeaderState extends State<HomeHeader> {
                     widget.currencyFormat.format(stats.monthTotal),
                     masked: widget.privacyModeEnabled,
                   ),
-                  iconData: Icons.close_rounded,
+                  iconData: Icons.arrow_downward_rounded,
                   iconColor: const Color(0xFFFF8585),
                   iconBgColor: const Color(0xFFFF8585).withAlpha(50),
-                  progressColor: const Color(0xFFFF8585),
-                  progressFactor: stats.monthIncomeTotal > 0
-                      ? (stats.monthTotal / stats.monthIncomeTotal).clamp(0.0, 1.0)
-                      : 0.65,
                 ),
               ),
               const SizedBox(width: 16),
@@ -409,11 +319,9 @@ class _HomeHeaderState extends State<HomeHeader> {
                     widget.currencyFormat.format(stats.monthIncomeTotal),
                     masked: widget.privacyModeEnabled,
                   ),
-                  iconData: Icons.north_east_rounded,
+                  iconData: Icons.arrow_upward_rounded,
                   iconColor: const Color(0xFF85FFB8),
                   iconBgColor: const Color(0xFF85FFB8).withAlpha(50),
-                  progressColor: const Color(0xFF85FFB8),
-                  progressFactor: 1.0,
                 ),
               ),
             ],
@@ -431,8 +339,6 @@ class _MetricCard extends StatelessWidget {
     required this.iconData,
     required this.iconColor,
     required this.iconBgColor,
-    required this.progressColor,
-    required this.progressFactor,
   });
 
   final String label;
@@ -440,8 +346,6 @@ class _MetricCard extends StatelessWidget {
   final IconData iconData;
   final Color iconColor;
   final Color iconBgColor;
-  final Color progressColor;
-  final double progressFactor;
 
   @override
   Widget build(BuildContext context) {
@@ -483,7 +387,7 @@ class _MetricCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
@@ -492,25 +396,6 @@ class _MetricCard extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 24,
                 fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            height: 6,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.black.withAlpha(40),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            alignment: Alignment.centerLeft,
-            child: FractionallySizedBox(
-              widthFactor: progressFactor,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: progressColor,
-                  borderRadius: BorderRadius.circular(3),
-                ),
               ),
             ),
           ),

@@ -6,7 +6,6 @@ import '../../../../routes/app_routes.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/expense_model.dart';
 import '../provider/account_providers.dart';
-import '../provider/budget_providers.dart';
 import '../provider/expense_providers.dart';
 import '../provider/notifications_provider.dart';
 import '../provider/preferences_providers.dart';
@@ -45,7 +44,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final accountsMap = {for (final a in accounts) a.id: a};
     final stats = ref.watch(statsProvider);
     final accountSummary = ref.watch(accountSummaryProvider);
-    final budgets = ref.watch(budgetTargetsProvider).value ?? defaultBudgetTargets;
     final privacyModeEnabled = ref.watch(privacyModeEnabledProvider);
 
     final currencyFormat = ref.watch(currencyFormatProvider);
@@ -88,11 +86,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                // Blue hero card (balance, metrics, budget bar)
+                // Blue hero card (balance, metrics)
                 HomeHeader(
                   stats: stats,
                   accountSummary: accountSummary,
-                  budgets: budgets,
                   currencyFormat: currencyFormat,
                   privacyModeEnabled: privacyModeEnabled,
                   onTogglePrivacy: () {
