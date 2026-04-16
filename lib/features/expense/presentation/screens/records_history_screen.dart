@@ -18,15 +18,27 @@ import 'records_history/records_cards.dart';
 import 'records_history/records_expense_list.dart';
 import 'records_history/records_filter.dart';
 import 'records_history/records_filter_bar.dart';
+import 'records_history/records_search_logic.dart';
 
 export 'records_history/records_filter.dart';
+export 'records_history/records_search_logic.dart';
 
 enum _SortOrder { newest, oldest, amountDesc, amountAsc }
 
 class RecordsHistoryScreen extends ConsumerStatefulWidget {
-  const RecordsHistoryScreen({super.key, this.initialTagFilter});
+  const RecordsHistoryScreen({
+    super.key,
+    this.initialTagFilter,
+    this.autoFocusSearch = false,
+  });
 
   final String? initialTagFilter;
+
+  /// When `true`, the search bar is automatically focused on mount and the
+  /// soft keyboard is raised — replicating the old TransactionSearchScreen
+  /// entry point.  When `false` (default), the screen opens as the normal
+  /// records browser.
+  final bool autoFocusSearch;
 
   @override
   ConsumerState<RecordsHistoryScreen> createState() =>
@@ -44,12 +56,30 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
   _SortOrder _sortOrder = _SortOrder.newest;
   DateTimeRange? _customDateRange;
 
+  late final TextEditingController _searchController;
+  late final FocusNode _searchFocusNode;
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
+    _searchController = TextEditingController();
+    _searchFocusNode = FocusNode();
     if (widget.initialTagFilter != null) {
       _tagFilter = widget.initialTagFilter!;
     }
+    if (widget.autoFocusSearch) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _searchFocusNode.requestFocus();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   @override
@@ -71,7 +101,7 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
         .toList(growable: false)
       ..sort();
 
-    final filteredExpenses = _filterExpenses(expenses);
+    final filteredExpenses = _filterExpenses(expenses, accountMap);
     final groupedExpenses = _groupExpenses(filteredExpenses);
     final filteredTotal = filteredExpenses.fold<double>(
       0,
@@ -83,9 +113,9 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Records',
-          style: TextStyle(
+        title: Text(
+          widget.autoFocusSearch ? 'Search' : 'Records',
+          style: const TextStyle(
             color: AppColors.textDark,
             fontWeight: FontWeight.w900,
           ),
@@ -93,25 +123,34 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
         actions: [
           // Sort button
           PopupMenuButton<_SortOrder>(
-            icon: const Icon(Icons.sort_rounded, color: AppColors.textDark),
+            icon: Icon(
+              Icons.sort_rounded,
+              color: _sortOrder != _SortOrder.newest
+                  ? AppColors.primaryBlue
+                  : AppColors.textDark,
+            ),
             tooltip: 'Sort',
             onSelected: (order) => setState(() => _sortOrder = order),
-            itemBuilder: (_) => const [
-              PopupMenuItem(
+            itemBuilder: (_) => [
+              CheckedPopupMenuItem(
                 value: _SortOrder.newest,
-                child: Text('Newest first'),
+                checked: _sortOrder == _SortOrder.newest,
+                child: const Text('Newest first'),
               ),
-              PopupMenuItem(
+              CheckedPopupMenuItem(
                 value: _SortOrder.oldest,
-                child: Text('Oldest first'),
+                checked: _sortOrder == _SortOrder.oldest,
+                child: const Text('Oldest first'),
               ),
-              PopupMenuItem(
+              CheckedPopupMenuItem(
                 value: _SortOrder.amountDesc,
-                child: Text('Amount ↓'),
+                checked: _sortOrder == _SortOrder.amountDesc,
+                child: const Text('Amount ↓'),
               ),
-              PopupMenuItem(
+              CheckedPopupMenuItem(
                 value: _SortOrder.amountAsc,
-                child: Text('Amount ↑'),
+                checked: _sortOrder == _SortOrder.amountAsc,
+                child: const Text('Amount ↑'),
               ),
             ],
           ),
@@ -126,18 +165,34 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              // ── Search bar ──────────────────────────────────────────────────
+              _RecordsSearchBar(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                hasText: _searchQuery.isNotEmpty,
+                hint: widget.autoFocusSearch
+                    ? 'e.g. coffee OR food, NOT rent…'
+                    : 'Search records…',
+                onChanged: (value) => setState(() => _searchQuery = value),
+                onClear: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+              ),
+              const SizedBox(height: 14),
+              // ── Summary card ─────────────────────────────────────────────────
               RecordsSummaryCard(
                 filteredTotal: filteredTotal,
                 transactionCount: filteredExpenses.length,
                 currency: currency,
                 privacyModeEnabled: privacyModeEnabled,
               ),
-              const SizedBox(height: 18),
-              // Date / type filter chips
+              const SizedBox(height: 14),
+              // ── Date / type filter chips ──────────────────────────────────────
               RecordsFilterChips(
                 selectedFilter: _selectedFilter,
                 onFilterSelected: (filter) {
@@ -153,7 +208,7 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                 customDateRange: _customDateRange,
               ),
               const SizedBox(height: 10),
-              // Account + Category + Tag row
+              // ── Account + Category + Tag row ─────────────────────────────────
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -167,7 +222,6 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                       accountFilterLabel: _accountFilterLabel(accountMap),
                     ),
                     const SizedBox(width: 10),
-                    // Category filter chip
                     _CategoryFilterChip(
                       categories: allCategories,
                       selectedCategory: _selectedCategoryFilter,
@@ -181,8 +235,8 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                         label: Text('#$_tagFilter'),
                         deleteIcon: const Icon(Icons.close, size: 16),
                         onDeleted: () => setState(() => _tagFilter = ''),
-                        backgroundColor: AppColors.primaryBlue
-                            .withValues(alpha: 0.1),
+                        backgroundColor:
+                            AppColors.primaryBlue.withValues(alpha: 0.1),
                         labelStyle: const TextStyle(
                           color: AppColors.primaryBlue,
                           fontWeight: FontWeight.w700,
@@ -193,7 +247,8 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
+              // ── Transaction list ─────────────────────────────────────────────
               Expanded(
                 child: expenseState.hasError
                     ? const RecordsStateCard(
@@ -204,11 +259,7 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                     : expenseState.isLoading && expenses.isEmpty
                         ? const Center(child: CircularProgressIndicator())
                         : filteredExpenses.isEmpty
-                            ? const RecordsStateCard(
-                                title: 'No matching transactions',
-                                message:
-                                    'Try another filter or add a new expense.',
-                              )
+                            ? _buildEmptyState()
                             : RecordsExpenseList(
                                 groupedExpenses: groupedExpenses,
                                 accounts: accounts,
@@ -228,22 +279,37 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
     );
   }
 
-  List<ExpenseModel> _filterExpenses(List<ExpenseModel> expenses) {
+  Widget _buildEmptyState() {
+    if (_searchQuery.isNotEmpty) {
+      return RecordsStateCard(
+        title: 'No results for "$_searchQuery"',
+        message: 'Try adjusting your search or filters.',
+      );
+    }
+    return const RecordsStateCard(
+      title: 'No matching transactions',
+      message: 'Try another filter or add a new expense.',
+    );
+  }
+
+  List<ExpenseModel> _filterExpenses(
+    List<ExpenseModel> expenses,
+    Map<String, AccountModel> accountMap,
+  ) {
     final now = DateTime.now();
     final today = DateUtils.dateOnly(now);
     final weekStart = today.subtract(Duration(days: now.weekday - 1));
+    final parsedQuery = SearchQuery.parse(_searchQuery);
 
     final filtered = expenses.where((expense) {
       final localDate = expense.date.toLocal();
       final dateOnly = DateUtils.dateOnly(localDate);
 
-      final matchesAccount = _selectedAccountFilter == _allAccountsKey ||
-          expense.accountId == _selectedAccountFilter;
-      if (!matchesAccount) return false;
+      if (_selectedAccountFilter != _allAccountsKey &&
+          expense.accountId != _selectedAccountFilter) return false;
 
-      final matchesCategory = _selectedCategoryFilter == _allCategoriesKey ||
-          expense.category == _selectedCategoryFilter;
-      if (!matchesCategory) return false;
+      if (_selectedCategoryFilter != _allCategoriesKey &&
+          expense.category != _selectedCategoryFilter) return false;
 
       if (_tagFilter.isNotEmpty) {
         final tags = TagParser.extractTags(expense.note);
@@ -252,38 +318,44 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
 
       switch (_selectedFilter) {
         case RecordsFilter.today:
-          return DateUtils.isSameDay(dateOnly, today);
+          if (!DateUtils.isSameDay(dateOnly, today)) return false;
         case RecordsFilter.week:
-          return !dateOnly.isBefore(weekStart) && !dateOnly.isAfter(today);
+          if (dateOnly.isBefore(weekStart) || dateOnly.isAfter(today)) {
+            return false;
+          }
         case RecordsFilter.month:
-          return dateOnly.year == today.year && dateOnly.month == today.month;
+          if (dateOnly.year != today.year || dateOnly.month != today.month) {
+            return false;
+          }
         case RecordsFilter.future:
-          return dateOnly.isAfter(today);
+          if (!dateOnly.isAfter(today)) return false;
         case RecordsFilter.custom:
-          if (_customDateRange == null) return true;
-          return !dateOnly.isBefore(_customDateRange!.start) &&
-              !dateOnly.isAfter(_customDateRange!.end);
+          if (_customDateRange != null) {
+            if (dateOnly.isBefore(_customDateRange!.start) ||
+                dateOnly.isAfter(_customDateRange!.end)) return false;
+          }
         case RecordsFilter.all:
-          return true;
+          break;
       }
+
+      if (!parsedQuery.isEmpty &&
+          !parsedQuery.matchesExpense(expense, accountMap)) return false;
+
+      return true;
     }).toList(growable: false);
 
+    final result = List<ExpenseModel>.from(filtered);
     switch (_sortOrder) {
       case _SortOrder.newest:
-        filtered.sort((a, b) => b.date.compareTo(a.date));
-        break;
+        result.sort((a, b) => b.date.compareTo(a.date));
       case _SortOrder.oldest:
-        filtered.sort((a, b) => a.date.compareTo(b.date));
-        break;
+        result.sort((a, b) => a.date.compareTo(b.date));
       case _SortOrder.amountDesc:
-        filtered.sort((a, b) => b.amount.compareTo(a.amount));
-        break;
+        result.sort((a, b) => b.amount.compareTo(a.amount));
       case _SortOrder.amountAsc:
-        filtered.sort((a, b) => a.amount.compareTo(b.amount));
-        break;
+        result.sort((a, b) => a.amount.compareTo(b.amount));
     }
-
-    return filtered;
+    return result;
   }
 
   SplayTreeMap<DateTime, List<ExpenseModel>> _groupExpenses(
@@ -458,6 +530,75 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
       return '"${value.replaceAll('"', '""')}"';
     }
     return value;
+  }
+}
+
+/// Styled search bar used in both browse and search modes.
+class _RecordsSearchBar extends StatelessWidget {
+  const _RecordsSearchBar({
+    required this.controller,
+    required this.focusNode,
+    required this.hasText,
+    required this.hint,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool hasText;
+  final String hint;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: AppColors.cardShadow,
+            blurRadius: 16,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        style: const TextStyle(
+          fontSize: 15,
+          color: AppColors.textDark,
+          fontWeight: FontWeight.w600,
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(
+            color: AppColors.textMuted,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: AppColors.primaryBlue,
+          ),
+          suffixIcon: hasText
+              ? IconButton(
+                  icon: const Icon(
+                    Icons.clear_rounded,
+                    color: AppColors.textMuted,
+                  ),
+                  onPressed: onClear,
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        ),
+        onChanged: onChanged,
+      ),
+    );
   }
 }
 

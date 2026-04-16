@@ -6,7 +6,6 @@ import '../features/expense/presentation/screens/notifications_screen.dart';
 import '../features/expense/presentation/screens/records_history_screen.dart';
 import '../features/expense/presentation/screens/scanner_screen.dart';
 import '../features/expense/presentation/screens/settings_screen.dart';
-import '../features/expense/presentation/screens/transaction_search_screen.dart';
 
 /// Centralised navigation helpers for XPensa.
 ///
@@ -79,13 +78,13 @@ abstract final class AppRoutes {
     );
   }
 
-  // ── Search ─────────────────────────────────────────────────────────────────
-
-  /// Push the transaction search screen.
+  /// Push the records / search screen in search mode.
+  ///
+  /// The search bar is automatically focused and the keyboard opens.
   static Future<void> pushTransactionSearch(BuildContext context) {
     return Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => const TransactionSearchScreen(),
+        builder: (_) => const RecordsHistoryScreen(autoFocusSearch: true),
       ),
     );
   }
