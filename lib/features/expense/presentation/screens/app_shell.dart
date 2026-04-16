@@ -159,6 +159,8 @@ class _AppShellState extends ConsumerState<AppShell> {
       ),
     );
   }
+
+  List<Widget> _buildPages() {
     return [
       const HomeScreen(),
       StatsScreen(),

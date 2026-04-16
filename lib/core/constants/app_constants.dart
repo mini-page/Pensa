@@ -9,7 +9,7 @@ abstract final class AppConstants {
   /// Supported currency options (symbol → display label).
   static const List<({String symbol, String label})> currencies = [
     (symbol: '₹', label: 'Rupee (₹)'),
-    (symbol: r'$', label: 'Dollar ($)'),
+    (symbol: r'$', label: 'Dollar (\$)'),
     (symbol: '€', label: 'Euro (€)'),
     (symbol: '£', label: 'Pound (£)'),
     (symbol: '¥', label: 'Yen (¥)'),

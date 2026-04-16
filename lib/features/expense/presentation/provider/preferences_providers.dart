@@ -101,6 +101,8 @@ final biometricLockEnabledProvider = Provider<bool>((ref) {
 final savingsGoalsJsonProvider = Provider<String>((ref) {
   return ref.watch(appPreferencesProvider).value?.savingsGoalsJson ?? '';
 });
+
+final isOnboardingCompletedProvider = Provider<bool>((ref) {
   return ref.watch(appPreferencesProvider).value?.isOnboardingCompleted ??
       AppPreferencesModel.defaults.isOnboardingCompleted;
 });
