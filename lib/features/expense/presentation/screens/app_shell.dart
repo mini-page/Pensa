@@ -22,7 +22,9 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<PowerFabState> _fabKey = GlobalKey<PowerFabState>();
   int _selectedIndex = 0;
+  bool _fabOpen = false;
 
   @override
   void initState() {
@@ -202,15 +204,30 @@ class _AppShellState extends ConsumerState<AppShell> {
               ),
             ),
           ),
+          // Dismiss barrier — covers content when FAB menu is open
+          if (_fabOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _fabKey.currentState?.close(),
+                child: Container(color: Colors.black.withValues(alpha: 0.12)),
+              ),
+            ),
+          // Expandable power FAB
+          Positioned(
+            right: 16,
+            bottom: 92,
+            child: PowerFab(
+              key: _fabKey,
+              onQuickAdd: _openAddExpenseScreen,
+              onScanner: () {
+                if (mounted) AppRoutes.pushScanner(context);
+              },
+              onToggle: (open) => setState(() => _fabOpen = open),
+            ),
+          ),
         ],
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 18),
-        child: PowerPill(
-          onTap: _handleFabPressed,
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: FloatingNavBar(
         selectedIndex: _selectedIndex,
         onTap: (index) {
@@ -224,10 +241,6 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   Future<void> _openAddExpenseScreen() async {
     await AppRoutes.pushAddExpense(context);
-  }
-
-  Future<void> _handleFabPressed() async {
-    await _openAddExpenseScreen();
   }
 }
 

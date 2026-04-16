@@ -9,7 +9,6 @@ import '../provider/account_providers.dart';
 import '../provider/expense_providers.dart';
 import '../provider/notifications_provider.dart';
 import '../provider/preferences_providers.dart';
-import '../widgets/quick_action_bar.dart';
 import '../widgets/transaction_card.dart';
 import '../widgets/ui_feedback.dart';
 import 'home/home_date_strip.dart';
@@ -106,49 +105,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                 const SizedBox(height: 8),
-                QuickActionBar(
-                  actions: const <QuickActionItem>[
-                    QuickActionItem(
-                      label: 'SMS',
-                      icon: Icons.sms_outlined,
-                      isEnabled: false,
-                      badgeLabel: 'Soon',
-                    ),
-                    QuickActionItem(
-                      label: 'VOICE',
-                      icon: Icons.mic_none_rounded,
-                      isEnabled: false,
-                      badgeLabel: 'Soon',
-                    ),
-                    QuickActionItem(
-                      label: 'SMART',
-                      icon: Icons.bolt_outlined,
-                      isEnabled: false,
-                      badgeLabel: 'Soon',
-                    ),
-                    QuickActionItem(
-                      label: 'SCANNER',
-                      icon: Icons.qr_code_scanner_rounded,
-                      isEnabled: true,
-                    ),
-                    QuickActionItem(
-                      label: 'MANUAL',
-                      icon: Icons.add_rounded,
-                      isHighlighted: true,
-                    ),
-                  ],
-                  onTap: (action) {
-                    if (action.label == 'MANUAL') {
-                      _openAddExpenseScreen(
-                        context,
-                        initialDate: _selectedDate,
-                      );
-                    } else if (action.label == 'SCANNER') {
-                      AppRoutes.pushScanner(context);
-                    }
-                  },
-                ),
-                const SizedBox(height: 22),
                 SizedBox(
                   height: 72,
                   child: ListView(
