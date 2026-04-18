@@ -104,7 +104,9 @@ class UpdateService {
       final parts = v.split('.');
       // Only the first three segments are significant; extras are ignored.
       final semver = parts.take(3).map(int.parse).toList();
-      while (semver.length < 3) semver.add(0);
+      while (semver.length < 3) {
+        semver.add(0);
+      }
       return semver;
     } catch (_) {
       return null;

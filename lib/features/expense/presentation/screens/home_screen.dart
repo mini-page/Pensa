@@ -519,7 +519,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             .setCustomQuickAmounts(updated);
       }
     } else if (action == 'edit') {
-      if (!mounted) return;
+      if (!context.mounted) return;
       await _showEditAmountDialog(
         context,
         currentAmount: amount,

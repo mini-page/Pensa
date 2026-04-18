@@ -306,10 +306,14 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
       final dateOnly = DateUtils.dateOnly(localDate);
 
       if (_selectedAccountFilter != _allAccountsKey &&
-          expense.accountId != _selectedAccountFilter) return false;
+          expense.accountId != _selectedAccountFilter) {
+        return false;
+      }
 
       if (_selectedCategoryFilter != _allCategoriesKey &&
-          expense.category != _selectedCategoryFilter) return false;
+          expense.category != _selectedCategoryFilter) {
+        return false;
+      }
 
       if (_tagFilter.isNotEmpty) {
         final tags = TagParser.extractTags(expense.note);
@@ -332,14 +336,18 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
         case RecordsFilter.custom:
           if (_customDateRange != null) {
             if (dateOnly.isBefore(_customDateRange!.start) ||
-                dateOnly.isAfter(_customDateRange!.end)) return false;
+                dateOnly.isAfter(_customDateRange!.end)) {
+              return false;
+            }
           }
         case RecordsFilter.all:
           break;
       }
 
       if (!parsedQuery.isEmpty &&
-          !parsedQuery.matchesExpense(expense, accountMap)) return false;
+          !parsedQuery.matchesExpense(expense, accountMap)) {
+        return false;
+      }
 
       return true;
     }).toList(growable: false);
