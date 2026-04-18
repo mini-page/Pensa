@@ -84,7 +84,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       children: <Widget>[
         // ── Sticky top bar (menu · logo · search · bell) ─────────────────
         HomeTopBar(
-          onMenuPressed: () => Scaffold.of(context).openDrawer(),
           onSearchPressed: () => AppRoutes.pushTransactionSearch(context),
           onNotificationPressed: () => AppRoutes.pushNotifications(context),
           unreadCount: unreadCount,

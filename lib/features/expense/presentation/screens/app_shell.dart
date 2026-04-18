@@ -12,7 +12,6 @@ import '../../../../shared/widgets/floating_nav_bar.dart';
 import '../../data/models/expense_model.dart';
 import '../provider/expense_providers.dart';
 import '../provider/preferences_providers.dart';
-import '../widgets/app_drawer.dart';
 import '../widgets/power_pill_menu.dart';
 import 'accounts_screen.dart';
 import 'categories_screen.dart';
@@ -28,7 +27,6 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<PowerFabState> _fabKey = GlobalKey<PowerFabState>();
   int _selectedIndex = 0;
   bool _fabOpen = false;
@@ -79,17 +77,30 @@ class _AppShellState extends ConsumerState<AppShell> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceAccent,
-                  borderRadius: BorderRadius.circular(2),
+            // Drag handle + close button row
+            Row(
+              children: [
+                const Spacer(),
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceAccent,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Close',
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  icon: const Icon(Icons.close_rounded,
+                      color: AppColors.textMuted),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
             Row(
               children: [
                 Container(
@@ -207,9 +218,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     );
 
     return Scaffold(
-      key: _scaffoldKey,
       extendBody: true,
-      drawer: const AppDrawer(),
       body: Stack(
         children: [
           IndexedStack(index: _selectedIndex, children: pages),

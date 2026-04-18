@@ -33,7 +33,6 @@ class SettingsScreen extends ConsumerWidget {
     final smartReminders = ref.watch(smartRemindersEnabledProvider);
     final privacyMode = ref.watch(privacyModeEnabledProvider);
     final isPinEnabled = ref.watch(isPinEnabledProvider);
-    final displayName = ref.watch(displayNameProvider);
     final themeMode = ref.watch(appThemeModeProvider);
     final locale = ref.watch(localeProvider);
     final currencySymbol = ref.watch(currencySymbolProvider);
@@ -68,22 +67,6 @@ class SettingsScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Profile ───────────────────────────────────────────────────
-            const SettingsSectionHeader(title: 'Profile'),
-            SettingsCard(
-              children: [
-                _buildActionTile(
-                  icon: Icons.person_outline_rounded,
-                  title: 'Display Name',
-                  subtitle: displayName.trim().isEmpty
-                      ? 'Tap to set your name'
-                      : displayName,
-                  onTap: () => _editDisplayName(context, ref, displayName),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-
             // ── General ──────────────────────────────────────────────────
             const SettingsSectionHeader(title: 'General'),
             SettingsCard(
@@ -337,44 +320,6 @@ class SettingsScreen extends ConsumerWidget {
       if (confirmed) {
         await controller.clearPin();
       }
-    }
-  }
-
-  Future<void> _editDisplayName(
-    BuildContext context,
-    WidgetRef ref,
-    String current,
-  ) async {
-    final controller = ref.read(appPreferencesControllerProvider);
-    final textController = TextEditingController(text: current);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Display Name'),
-        content: TextField(
-          controller: textController,
-          autofocus: true,
-          maxLength: 40,
-          decoration: const InputDecoration(
-            hintText: 'Your name',
-          ),
-          onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(null),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.of(ctx).pop(textController.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    if (result != null && result.isNotEmpty) {
-      await controller.setDisplayName(result);
     }
   }
 

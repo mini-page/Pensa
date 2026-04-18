@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../../core/constants/app_assets.dart';
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../routes/app_routes.dart';
 import '../../provider/account_providers.dart';
 import '../../provider/expense_providers.dart';
 import '../../widgets/amount_visibility.dart';
@@ -17,13 +18,11 @@ import '../../widgets/amount_visibility.dart';
 class HomeTopBar extends StatelessWidget {
   const HomeTopBar({
     super.key,
-    required this.onMenuPressed,
     required this.onSearchPressed,
     required this.onNotificationPressed,
     this.unreadCount = 0,
   });
 
-  final VoidCallback onMenuPressed;
   final VoidCallback onSearchPressed;
   final VoidCallback onNotificationPressed;
 
@@ -35,26 +34,9 @@ class HomeTopBar extends StatelessWidget {
     final topPadding = MediaQuery.of(context).padding.top;
     return Container(
       color: AppColors.primaryBlue,
-      padding: EdgeInsets.fromLTRB(4, topPadding + 4, 4, 4),
+      padding: EdgeInsets.fromLTRB(16, topPadding + 4, 4, 4),
       child: Row(
         children: <Widget>[
-          IconButton(
-            tooltip: 'Open menu',
-            onPressed: onMenuPressed,
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(25),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.menu_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: Image.asset(AppAssets.logo, width: 30, height: 30),
@@ -121,6 +103,22 @@ class HomeTopBar extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
+          IconButton(
+            tooltip: 'Settings',
+            onPressed: () => AppRoutes.pushSettings(context),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(25),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.settings_outlined,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
           ),
         ],
       ),
