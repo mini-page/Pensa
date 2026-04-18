@@ -9,8 +9,10 @@ import 'package:workmanager/workmanager.dart';
 
 import '../../data/datasource/preferences_local_datasource.dart';
 import '../../data/models/app_preferences_model.dart';
+import '../../data/models/custom_category_model.dart';
 import '../../data/repositories/hive_preferences_repository.dart';
 import '../../domain/repositories/preferences_repository.dart';
+import '../widgets/expense_category.dart';
 
 const String backupTaskTag = 'xpensa_offline_backup';
 
@@ -125,6 +127,96 @@ final hiddenDefaultAmountsProvider = Provider<List<double>>((ref) {
   } catch (_) {
     return const <double>[];
   }
+});
+
+final customExpenseCategoryListProvider =
+    Provider<List<CustomCategoryModel>>((ref) {
+  final json = ref.watch(appPreferencesProvider).value
+          ?.customExpenseCategoriesJson ??
+      '';
+  return customCategoriesFromJson(json);
+});
+
+final customIncomeCategoryListProvider =
+    Provider<List<CustomCategoryModel>>((ref) {
+  final json = ref.watch(appPreferencesProvider).value
+          ?.customIncomeCategoriesJson ??
+      '';
+  return customCategoriesFromJson(json);
+});
+
+final builtInExpenseCategoryOverridesProvider =
+    Provider<List<BuiltInCategoryOverride>>((ref) {
+  final json = ref.watch(appPreferencesProvider).value
+          ?.builtInExpenseCategoryOverridesJson ??
+      '';
+  return builtInOverridesFromJson(json);
+});
+
+final builtInIncomeCategoryOverridesProvider =
+    Provider<List<BuiltInCategoryOverride>>((ref) {
+  final json = ref.watch(appPreferencesProvider).value
+          ?.builtInIncomeCategoryOverridesJson ??
+      '';
+  return builtInOverridesFromJson(json);
+});
+
+/// All expense categories: built-in list (with user overrides) + user-defined custom categories.
+final allExpenseCategoriesProvider = Provider<List<ExpenseCategory>>((ref) {
+  final custom = ref.watch(customExpenseCategoryListProvider);
+  final overrides = ref.watch(builtInExpenseCategoryOverridesProvider);
+  final overridesMap = <String, BuiltInCategoryOverride>{
+    for (final o in overrides) o.name: o,
+  };
+  return <ExpenseCategory>[
+    ...expenseCategories.map((c) {
+      final override = overridesMap[c.name];
+      if (override == null) return c;
+      return ExpenseCategory(
+        name: c.name,
+        icon: categoryIconFromKey(override.iconKey),
+        color: Color(int.parse('FF${override.colorHex}', radix: 16)),
+        iconKey: override.iconKey,
+      );
+    }),
+    ...custom.map(
+      (c) => ExpenseCategory(
+        name: c.name,
+        icon: categoryIconFromKey(c.iconKey),
+        color: c.color,
+        iconKey: c.iconKey,
+      ),
+    ),
+  ];
+});
+
+/// All income categories: built-in list (with user overrides) + user-defined custom categories.
+final allIncomeCategoriesProvider = Provider<List<ExpenseCategory>>((ref) {
+  final custom = ref.watch(customIncomeCategoryListProvider);
+  final overrides = ref.watch(builtInIncomeCategoryOverridesProvider);
+  final overridesMap = <String, BuiltInCategoryOverride>{
+    for (final o in overrides) o.name: o,
+  };
+  return <ExpenseCategory>[
+    ...incomeCategories.map((c) {
+      final override = overridesMap[c.name];
+      if (override == null) return c;
+      return ExpenseCategory(
+        name: c.name,
+        icon: categoryIconFromKey(override.iconKey),
+        color: Color(int.parse('FF${override.colorHex}', radix: 16)),
+        iconKey: override.iconKey,
+      );
+    }),
+    ...custom.map(
+      (c) => ExpenseCategory(
+        name: c.name,
+        icon: categoryIconFromKey(c.iconKey),
+        color: c.color,
+        iconKey: c.iconKey,
+      ),
+    ),
+  ];
 });
 
 final isOnboardingCompletedProvider = Provider<bool>((ref) {
@@ -355,6 +447,78 @@ class AppPreferencesController {
         );
   }
 
+  Future<void> addExpenseCategory(CustomCategoryModel category) async {
+    final list = customCategoriesFromJson(
+        _current.customExpenseCategoriesJson);
+    list.add(category);
+    await _ref.read(appPreferencesProvider.notifier).save(
+          _current.copyWith(
+            customExpenseCategoriesJson: customCategoriesToJson(list),
+          ),
+        );
+  }
+
+  Future<void> updateExpenseCategory(CustomCategoryModel category) async {
+    final list = customCategoriesFromJson(
+        _current.customExpenseCategoriesJson);
+    final index = list.indexWhere((c) => c.id == category.id);
+    if (index != -1) {
+      list[index] = category;
+    }
+    await _ref.read(appPreferencesProvider.notifier).save(
+          _current.copyWith(
+            customExpenseCategoriesJson: customCategoriesToJson(list),
+          ),
+        );
+  }
+
+  Future<void> removeExpenseCategory(String id) async {
+    final list = customCategoriesFromJson(
+        _current.customExpenseCategoriesJson);
+    list.removeWhere((c) => c.id == id);
+    await _ref.read(appPreferencesProvider.notifier).save(
+          _current.copyWith(
+            customExpenseCategoriesJson: customCategoriesToJson(list),
+          ),
+        );
+  }
+
+  Future<void> addIncomeCategory(CustomCategoryModel category) async {
+    final list = customCategoriesFromJson(
+        _current.customIncomeCategoriesJson);
+    list.add(category);
+    await _ref.read(appPreferencesProvider.notifier).save(
+          _current.copyWith(
+            customIncomeCategoriesJson: customCategoriesToJson(list),
+          ),
+        );
+  }
+
+  Future<void> updateIncomeCategory(CustomCategoryModel category) async {
+    final list = customCategoriesFromJson(
+        _current.customIncomeCategoriesJson);
+    final index = list.indexWhere((c) => c.id == category.id);
+    if (index != -1) {
+      list[index] = category;
+    }
+    await _ref.read(appPreferencesProvider.notifier).save(
+          _current.copyWith(
+            customIncomeCategoriesJson: customCategoriesToJson(list),
+          ),
+        );
+  }
+
+  Future<void> removeIncomeCategory(String id) async {
+    final list = customCategoriesFromJson(
+        _current.customIncomeCategoriesJson);
+    list.removeWhere((c) => c.id == id);
+    await _ref.read(appPreferencesProvider.notifier).save(
+          _current.copyWith(
+            customIncomeCategoriesJson: customCategoriesToJson(list),
+          ),
+        );
+  }
+
   Future<void> setExpenseCategoryEnabled(
     String categoryName,
     bool enabled,
@@ -411,6 +575,44 @@ class AppPreferencesController {
             currencySymbol: currencySymbol,
             smartRemindersEnabled: smartRemindersEnabled,
             isOnboardingCompleted: isOnboardingCompleted,
+          ),
+        );
+  }
+
+  Future<void> saveBuiltInExpenseCategoryOverride(
+    BuiltInCategoryOverride override,
+  ) async {
+    final list = builtInOverridesFromJson(
+        _current.builtInExpenseCategoryOverridesJson);
+    final index = list.indexWhere((o) => o.name == override.name);
+    if (index != -1) {
+      list[index] = override;
+    } else {
+      list.add(override);
+    }
+    await _ref.read(appPreferencesProvider.notifier).save(
+          _current.copyWith(
+            builtInExpenseCategoryOverridesJson:
+                builtInOverridesToJson(list),
+          ),
+        );
+  }
+
+  Future<void> saveBuiltInIncomeCategoryOverride(
+    BuiltInCategoryOverride override,
+  ) async {
+    final list = builtInOverridesFromJson(
+        _current.builtInIncomeCategoryOverridesJson);
+    final index = list.indexWhere((o) => o.name == override.name);
+    if (index != -1) {
+      list[index] = override;
+    } else {
+      list.add(override);
+    }
+    await _ref.read(appPreferencesProvider.notifier).save(
+          _current.copyWith(
+            builtInIncomeCategoryOverridesJson:
+                builtInOverridesToJson(list),
           ),
         );
   }
