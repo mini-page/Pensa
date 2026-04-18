@@ -76,3 +76,48 @@ List<CustomCategoryModel> customCategoriesFromJson(String json) {
 
 String customCategoriesToJson(List<CustomCategoryModel> cats) =>
     jsonEncode(cats.map((c) => c.toJson()).toList());
+
+/// Stores user-defined icon / colour overrides for a built-in category.
+class BuiltInCategoryOverride {
+  const BuiltInCategoryOverride({
+    required this.name,
+    required this.iconKey,
+    required this.colorHex,
+  });
+
+  factory BuiltInCategoryOverride.fromJson(Map<String, dynamic> json) =>
+      BuiltInCategoryOverride(
+        name: json['name'] as String,
+        iconKey: json['iconKey'] as String,
+        colorHex: json['colorHex'] as String,
+      );
+
+  /// The built-in category name this override applies to.
+  final String name;
+  final String iconKey;
+
+  /// 6-char hex colour string, no '#', e.g. `"FFB648"`.
+  final String colorHex;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+        'name': name,
+        'iconKey': iconKey,
+        'colorHex': colorHex,
+      };
+}
+
+List<BuiltInCategoryOverride> builtInOverridesFromJson(String json) {
+  if (json.isEmpty) return <BuiltInCategoryOverride>[];
+  try {
+    final list = jsonDecode(json) as List<dynamic>;
+    return list
+        .map((e) =>
+            BuiltInCategoryOverride.fromJson(e as Map<String, dynamic>))
+        .toList();
+  } catch (_) {
+    return <BuiltInCategoryOverride>[];
+  }
+}
+
+String builtInOverridesToJson(List<BuiltInCategoryOverride> overrides) =>
+    jsonEncode(overrides.map((o) => o.toJson()).toList());

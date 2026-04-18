@@ -15,7 +15,6 @@ import '../provider/preferences_providers.dart';
 import '../widgets/account_editor_sheet.dart';
 import '../widgets/account_icons.dart';
 import '../widgets/amount_visibility.dart';
-import '../widgets/budget_editor_sheet.dart';
 import '../widgets/category_editor_sheet.dart';
 import '../widgets/expense_category.dart';
 import 'categories/categories_widgets.dart';
@@ -258,10 +257,12 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
                   ? () => _openCustomCategoryEditor(
                         customModel,
                         TransactionType.expense,
+                        budget,
                       )
-                  : () => _openBudgetEditor(
-                        categoryName: category.name,
-                        currentBudget: budget,
+                  : () => _openBuiltInCategoryEditor(
+                        category,
+                        budget,
+                        TransactionType.expense,
                       ),
               onToggle: (value) =>
                   _setExpenseCategoryEnabled(category.name, value),
@@ -272,6 +273,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
         return allIncomeCategories.map(
           (category) {
             final amount = stats.incomeCategoryTotals[category.name] ?? 0;
+            final budget = budgets[category.name] ?? 0;
             final isEnabled = !disabledIncomeCategories.contains(category.name);
             final isCustom = !builtInIncomeNames.contains(category.name);
             final customModel = isCustom
@@ -299,8 +301,13 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
                   ? () => _openCustomCategoryEditor(
                         customModel,
                         TransactionType.income,
+                        budget,
                       )
-                  : null,
+                  : () => _openBuiltInCategoryEditor(
+                        category,
+                        budget,
+                        TransactionType.income,
+                      ),
               onToggle: (value) =>
                   _setIncomeCategoryEnabled(category.name, value),
             );
@@ -538,14 +545,30 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
   }
 
   Future<void> _openCategoryCreator(TransactionType type) async {
-    final result = await showCategoryEditorSheet(context);
+    final result = await showCategoryEditorSheet(
+      context,
+      currencySymbol: ref.read(currencySymbolProvider),
+    );
     if (result == null || !mounted) return;
+
+    final newCategory = CustomCategoryModel.create(
+      name: result.name,
+      iconKey: result.iconKey,
+      colorHex: result.colorHex,
+    );
 
     final controller = ref.read(appPreferencesControllerProvider);
     if (type == TransactionType.expense) {
-      await controller.addExpenseCategory(result);
+      await controller.addExpenseCategory(newCategory);
     } else {
-      await controller.addIncomeCategory(result);
+      await controller.addIncomeCategory(newCategory);
+    }
+
+    if (result.monthlyLimit != null && result.monthlyLimit! > 0) {
+      await ref.read(budgetControllerProvider).saveBudget(
+            category: result.name,
+            monthlyLimit: result.monthlyLimit!,
+          );
     }
 
     if (!mounted) return;
@@ -555,15 +578,21 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
   Future<void> _openCustomCategoryEditor(
     CustomCategoryModel existing,
     TransactionType type,
+    double currentBudget,
   ) async {
-    final result =
-        await showCategoryEditorSheet(context, category: existing);
+    final result = await showCategoryEditorSheet(
+      context,
+      editName: existing.name,
+      editIconKey: existing.iconKey,
+      editColorHex: existing.colorHex,
+      editMonthlyLimit: currentBudget > 0 ? currentBudget : null,
+      currencySymbol: ref.read(currencySymbolProvider),
+    );
     if (result == null || !mounted) return;
 
     final controller = ref.read(appPreferencesControllerProvider);
 
-    if (result.colorHex == '__delete__') {
-      // User confirmed deletion.
+    if (result.isDelete) {
       if (type == TransactionType.expense) {
         await controller.removeExpenseCategory(existing.id);
       } else {
@@ -574,45 +603,67 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
       return;
     }
 
+    final updated = existing.copyWith(
+      name: result.name,
+      iconKey: result.iconKey,
+      colorHex: result.colorHex,
+    );
+
     if (type == TransactionType.expense) {
-      await controller.updateExpenseCategory(result);
+      await controller.updateExpenseCategory(updated);
     } else {
-      await controller.updateIncomeCategory(result);
+      await controller.updateIncomeCategory(updated);
     }
+
+    if (result.monthlyLimit != null) {
+      await ref.read(budgetControllerProvider).saveBudget(
+            category: result.name,
+            monthlyLimit: result.monthlyLimit!,
+          );
+    }
+
     if (!mounted) return;
     _showFeedback('${result.name} updated.');
   }
 
-  Future<void> _openBudgetEditor({
-    required String categoryName,
-    required double currentBudget,
-  }) async {
-    final result = await showBudgetEditorSheet(
+  Future<void> _openBuiltInCategoryEditor(
+    ExpenseCategory category,
+    double currentBudget,
+    TransactionType type,
+  ) async {
+    final result = await showCategoryEditorSheet(
       context,
-      categories: expenseCategories,
-      initialCategory: categoryName,
-      initialAmount: currentBudget,
+      editName: category.name,
+      editIconKey: category.iconKey,
+      editColorHex: category.colorHex,
+      editMonthlyLimit: currentBudget > 0 ? currentBudget : null,
+      isBuiltIn: true,
       currencySymbol: ref.read(currencySymbolProvider),
     );
+    if (result == null || !mounted) return;
 
-    if (result == null) {
-      return;
+    final override = BuiltInCategoryOverride(
+      name: category.name,
+      iconKey: result.iconKey,
+      colorHex: result.colorHex,
+    );
+
+    final controller = ref.read(appPreferencesControllerProvider);
+    if (type == TransactionType.expense) {
+      await controller.saveBuiltInExpenseCategoryOverride(override);
+    } else {
+      await controller.saveBuiltInIncomeCategoryOverride(override);
     }
 
-    await ref
-        .read(budgetControllerProvider)
-        .saveBudget(category: result.category, monthlyLimit: result.amount);
-
-    if (!mounted) {
-      return;
+    if (result.monthlyLimit != null) {
+      await ref.read(budgetControllerProvider).saveBudget(
+            category: category.name,
+            monthlyLimit: result.monthlyLimit!,
+          );
     }
 
-    if (ref.read(budgetTargetsProvider).hasError) {
-      _showFeedback('Could not save ${result.category} budget.');
-      return;
-    }
-
-    _showFeedback('${result.category} budget updated.');
+    if (!mounted) return;
+    _showFeedback('${category.name} updated.');
   }
 
   Future<void> _openAccountEditor({AccountModel? account}) async {

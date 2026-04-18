@@ -2,9 +2,32 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/context_extensions.dart';
-import '../../data/models/custom_category_model.dart';
 
-/// Predefined icon options shown in [CategoryEditorSheet].
+/// Result returned from [showCategoryEditorSheet].
+class CategoryEditorResult {
+  const CategoryEditorResult({
+    required this.name,
+    required this.iconKey,
+    required this.colorHex,
+    this.monthlyLimit,
+    this.isDelete = false,
+  });
+
+  final String name;
+  final String iconKey;
+
+  /// 6-char hex string without '#'.
+  final String colorHex;
+
+  /// Monthly spending limit. `null` = none / leave unchanged. `0` = remove limit.
+  final double? monthlyLimit;
+
+  /// `true` only when the user confirmed deletion of a custom category.
+  final bool isDelete;
+}
+
+/// Predefined icon options shown in the category editor.
+/// Add new entries here to extend the picker — no other changes needed.
 const List<({String key, IconData icon})> categoryIconOptions = [
   (key: 'restaurant', icon: Icons.restaurant_outlined),
   (key: 'transport', icon: Icons.directions_bus_outlined),
@@ -18,6 +41,27 @@ const List<({String key, IconData icon})> categoryIconOptions = [
   (key: 'gift', icon: Icons.card_giftcard_outlined),
   (key: 'work', icon: Icons.work_outline_rounded),
   (key: 'star', icon: Icons.star_outline_rounded),
+  (key: 'beauty', icon: Icons.auto_awesome_outlined),
+  (key: 'social', icon: Icons.more_horiz_rounded),
+  (key: 'travel', icon: Icons.flight_takeoff_outlined),
+  (key: 'widgets', icon: Icons.widgets_outlined),
+  (key: 'watch', icon: Icons.watch_outlined),
+  (key: 'award', icon: Icons.emoji_events_outlined),
+  (key: 'coupon', icon: Icons.confirmation_num_outlined),
+  (key: 'lottery', icon: Icons.casino_outlined),
+  (key: 'refund', icon: Icons.replay_circle_filled_outlined),
+  (key: 'sale', icon: Icons.sell_outlined),
+  (key: 'savings', icon: Icons.savings_outlined),
+  (key: 'invest', icon: Icons.trending_up_rounded),
+  (key: 'rent', icon: Icons.house_outlined),
+  (key: 'bill', icon: Icons.receipt_outlined),
+  (key: 'phone', icon: Icons.phone_android_outlined),
+  (key: 'game', icon: Icons.sports_esports_outlined),
+  (key: 'food', icon: Icons.fastfood_outlined),
+  (key: 'coffee', icon: Icons.coffee_outlined),
+  (key: 'music', icon: Icons.music_note_outlined),
+  (key: 'sport', icon: Icons.sports_outlined),
+  (key: 'car', icon: Icons.directions_car_outlined),
 ];
 
 /// Predefined colour hex strings (no '#') for category colours.
@@ -36,27 +80,55 @@ const List<String> categoryColorOptions = [
   'FFC0CB',
 ];
 
-/// Shows a bottom sheet for creating or editing a [CustomCategoryModel].
+/// Shows a bottom sheet for creating or editing a category.
 ///
-/// Returns the created/updated model on save, or `null` on cancel.
-/// When [category] is non-null the sheet is in edit mode and a Delete button
-/// is shown.
-Future<CustomCategoryModel?> showCategoryEditorSheet(
+/// • **Create mode**: pass nothing — name, icon, colour, optional limit.
+/// • **Custom edit mode**: pass [editName]/[editIconKey]/[editColorHex] — also shows Delete.
+/// • **Built-in edit mode**: same params + `isBuiltIn: true` — name is read-only, no Delete.
+///
+/// Returns [CategoryEditorResult] on save, or `null` on cancel.
+Future<CategoryEditorResult?> showCategoryEditorSheet(
   BuildContext context, {
-  CustomCategoryModel? category,
+  String? editName,
+  String? editIconKey,
+  String? editColorHex,
+  double? editMonthlyLimit,
+  bool isBuiltIn = false,
+  String currencySymbol = '₹',
 }) {
-  return showModalBottomSheet<CustomCategoryModel>(
+  return showModalBottomSheet<CategoryEditorResult>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => _CategoryEditorSheet(category: category),
+    builder: (context) => _CategoryEditorSheet(
+      editName: editName,
+      editIconKey: editIconKey,
+      editColorHex: editColorHex,
+      editMonthlyLimit: editMonthlyLimit,
+      isBuiltIn: isBuiltIn,
+      currencySymbol: currencySymbol,
+    ),
   );
 }
 
 class _CategoryEditorSheet extends StatefulWidget {
-  const _CategoryEditorSheet({this.category});
+  const _CategoryEditorSheet({
+    this.editName,
+    this.editIconKey,
+    this.editColorHex,
+    this.editMonthlyLimit,
+    this.isBuiltIn = false,
+    this.currencySymbol = '₹',
+  });
 
-  final CustomCategoryModel? category;
+  final String? editName;
+  final String? editIconKey;
+  final String? editColorHex;
+  final double? editMonthlyLimit;
+  final bool isBuiltIn;
+  final String currencySymbol;
+
+  bool get isEditing => editName != null;
 
   @override
   State<_CategoryEditorSheet> createState() => _CategoryEditorSheetState();
@@ -64,30 +136,34 @@ class _CategoryEditorSheet extends StatefulWidget {
 
 class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
   late final TextEditingController _nameController;
+  late final TextEditingController _limitController;
   late String _iconKey;
   late String _colorHex;
 
   @override
   void initState() {
     super.initState();
-    _nameController =
-        TextEditingController(text: widget.category?.name ?? '');
-    _iconKey =
-        widget.category?.iconKey ?? categoryIconOptions.first.key;
-    _colorHex =
-        widget.category?.colorHex ?? categoryColorOptions.first;
+    _nameController = TextEditingController(text: widget.editName ?? '');
+    _limitController = TextEditingController(
+      text: widget.editMonthlyLimit != null && widget.editMonthlyLimit! > 0
+          ? widget.editMonthlyLimit!.toStringAsFixed(0)
+          : '',
+    );
+    _iconKey = widget.editIconKey ?? categoryIconOptions.first.key;
+    _colorHex = widget.editColorHex ?? categoryColorOptions.first;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _limitController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final insets = MediaQuery.of(context).viewInsets;
-    final isEditing = widget.category != null;
+    final isEditing = widget.isEditing;
 
     return Padding(
       padding: EdgeInsets.only(bottom: insets.bottom),
@@ -119,22 +195,31 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Give your custom category a name, icon, and colour.',
-                style: TextStyle(
+              Text(
+                isEditing
+                    ? 'Customise the icon, colour and monthly limit.'
+                    : 'Give your custom category a name, icon, colour and optional monthly limit.',
+                style: const TextStyle(
                   color: AppColors.textMuted,
                   fontWeight: FontWeight.w600,
                   height: 1.5,
                 ),
               ),
               const SizedBox(height: 20),
-              TextField(
-                controller: _nameController,
-                autofocus: !isEditing,
-                textCapitalization: TextCapitalization.words,
-                decoration: _inputDecoration('Category name'),
-              ),
+
+              // Name field — read-only label for built-in categories
+              if (widget.isBuiltIn)
+                _readOnlyNameDisplay(widget.editName ?? '')
+              else
+                TextField(
+                  controller: _nameController,
+                  autofocus: !isEditing,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: _inputDecoration('Category name'),
+                ),
               const SizedBox(height: 18),
+
+              // Icon picker — 2-row horizontal scroll
               const Text(
                 'Icon',
                 style: TextStyle(
@@ -143,28 +228,10 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                 ),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: categoryIconOptions.map((option) {
-                  final isSelected = option.key == _iconKey;
-                  return ChoiceChip(
-                    label: Icon(
-                      option.icon,
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.primaryBlue,
-                    ),
-                    selected: isSelected,
-                    selectedColor: AppColors.primaryBlue,
-                    backgroundColor: AppColors.lightBlueBg,
-                    onSelected: (_) {
-                      setState(() => _iconKey = option.key);
-                    },
-                  );
-                }).toList(growable: false),
-              ),
+              _buildIconPicker(),
               const SizedBox(height: 18),
+
+              // Colour picker
               const Text(
                 'Colour',
                 style: TextStyle(
@@ -214,7 +281,26 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                   );
                 }).toList(growable: false),
               ),
+              const SizedBox(height: 18),
+
+              // Monthly limit
+              const Text(
+                'Monthly Limit',
+                style: TextStyle(
+                  color: AppColors.textDark,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _limitController,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                decoration: _inputDecoration('Leave blank for no limit')
+                    .copyWith(prefixText: '${widget.currencySymbol} '),
+              ),
               const SizedBox(height: 24),
+
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
@@ -232,7 +318,7 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
                   ),
                 ),
               ),
-              if (isEditing) ...<Widget>[
+              if (isEditing && !widget.isBuiltIn) ...<Widget>[
                 const SizedBox(height: 10),
                 SizedBox(
                   width: double.infinity,
@@ -260,6 +346,68 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
     );
   }
 
+  /// Two-row horizontally scrollable icon picker.
+  Widget _buildIconPicker() {
+    const double chipSize = 52;
+    const double chipSpacing = 10;
+    final mid = (categoryIconOptions.length / 2).ceil();
+    final topRow = categoryIconOptions.sublist(0, mid);
+    final bottomRow = categoryIconOptions.sublist(mid);
+
+    return SizedBox(
+      height: chipSize * 2 + chipSpacing,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(children: topRow.map(_buildIconChip).toList(growable: false)),
+            const SizedBox(height: chipSpacing),
+            Row(
+                children:
+                    bottomRow.map(_buildIconChip).toList(growable: false)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconChip(({String key, IconData icon}) option) {
+    final isSelected = option.key == _iconKey;
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: ChoiceChip(
+        label: Icon(
+          option.icon,
+          color: isSelected ? Colors.white : AppColors.primaryBlue,
+        ),
+        selected: isSelected,
+        selectedColor: AppColors.primaryBlue,
+        backgroundColor: AppColors.lightBlueBg,
+        onSelected: (_) => setState(() => _iconKey = option.key),
+      ),
+    );
+  }
+
+  Widget _readOnlyNameDisplay(String name) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Text(
+        name,
+        style: const TextStyle(
+          color: AppColors.textDark,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
@@ -273,25 +421,32 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
   }
 
   void _submit() {
-    final name = _nameController.text.trim();
+    final name =
+        widget.isBuiltIn ? (widget.editName ?? '') : _nameController.text.trim();
     if (name.isEmpty) {
       context.showSnackBar('Enter a category name.');
       return;
     }
 
-    final result = widget.category != null
-        ? widget.category!.copyWith(
-            name: name,
-            iconKey: _iconKey,
-            colorHex: _colorHex,
-          )
-        : CustomCategoryModel.create(
-            name: name,
-            iconKey: _iconKey,
-            colorHex: _colorHex,
-          );
+    final limitText = _limitController.text.trim();
+    double? monthlyLimit;
+    if (limitText.isNotEmpty) {
+      final parsed = double.tryParse(limitText);
+      if (parsed == null || parsed < 0) {
+        context.showSnackBar('Enter a valid monthly limit.');
+        return;
+      }
+      monthlyLimit = parsed;
+    }
 
-    Navigator.of(context).pop(result);
+    Navigator.of(context).pop(
+      CategoryEditorResult(
+        name: name,
+        iconKey: _iconKey,
+        colorHex: _colorHex,
+        monthlyLimit: monthlyLimit,
+      ),
+    );
   }
 
   Future<void> _delete() async {
@@ -319,14 +474,12 @@ class _CategoryEditorSheetState extends State<_CategoryEditorSheet> {
     );
 
     if (confirmed == true && mounted) {
-      // Return the existing category with a special colorHex sentinel
-      // so the caller knows this is a delete request (colorHex == '__delete__').
       Navigator.of(context).pop(
-        CustomCategoryModel(
-          id: widget.category!.id,
-          name: widget.category!.name,
-          iconKey: widget.category!.iconKey,
-          colorHex: '__delete__',
+        CategoryEditorResult(
+          name: widget.editName ?? '',
+          iconKey: _iconKey,
+          colorHex: _colorHex,
+          isDelete: true,
         ),
       );
     }

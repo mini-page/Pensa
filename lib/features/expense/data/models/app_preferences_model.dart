@@ -24,6 +24,8 @@ class AppPreferencesModel {
     this.hiddenDefaultAmountsJson = '',
     this.customExpenseCategoriesJson = '',
     this.customIncomeCategoriesJson = '',
+    this.builtInExpenseCategoryOverridesJson = '',
+    this.builtInIncomeCategoryOverridesJson = '',
   });
 
   static const AppPreferencesModel defaults = AppPreferencesModel(
@@ -47,6 +49,8 @@ class AppPreferencesModel {
     hiddenDefaultAmountsJson: '',
     customExpenseCategoriesJson: '',
     customIncomeCategoriesJson: '',
+    builtInExpenseCategoryOverridesJson: '',
+    builtInIncomeCategoryOverridesJson: '',
   );
 
   final String themeModeKey;
@@ -81,6 +85,10 @@ class AppPreferencesModel {
   final String customExpenseCategoriesJson;
   /// JSON-serialised list of user-defined income categories.
   final String customIncomeCategoriesJson;
+  /// JSON-serialised list of built-in expense category icon/colour overrides.
+  final String builtInExpenseCategoryOverridesJson;
+  /// JSON-serialised list of built-in income category icon/colour overrides.
+  final String builtInIncomeCategoryOverridesJson;
 
   bool get isPinEnabled => pinHash.isNotEmpty;
 
@@ -109,6 +117,8 @@ class AppPreferencesModel {
     String? hiddenDefaultAmountsJson,
     String? customExpenseCategoriesJson,
     String? customIncomeCategoriesJson,
+    String? builtInExpenseCategoryOverridesJson,
+    String? builtInIncomeCategoryOverridesJson,
   }) {
     return AppPreferencesModel(
       themeModeKey: themeModeKey ?? this.themeModeKey,
@@ -143,6 +153,12 @@ class AppPreferencesModel {
           customExpenseCategoriesJson ?? this.customExpenseCategoriesJson,
       customIncomeCategoriesJson:
           customIncomeCategoriesJson ?? this.customIncomeCategoriesJson,
+      builtInExpenseCategoryOverridesJson:
+          builtInExpenseCategoryOverridesJson ??
+              this.builtInExpenseCategoryOverridesJson,
+      builtInIncomeCategoryOverridesJson:
+          builtInIncomeCategoryOverridesJson ??
+              this.builtInIncomeCategoryOverridesJson,
     );
   }
 }
@@ -185,6 +201,8 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
     String hiddenDefaultAmountsJson = AppPreferencesModel.defaults.hiddenDefaultAmountsJson;
     String customExpenseCategoriesJson = AppPreferencesModel.defaults.customExpenseCategoriesJson;
     String customIncomeCategoriesJson = AppPreferencesModel.defaults.customIncomeCategoriesJson;
+    String builtInExpenseCategoryOverridesJson = AppPreferencesModel.defaults.builtInExpenseCategoryOverridesJson;
+    String builtInIncomeCategoryOverridesJson = AppPreferencesModel.defaults.builtInIncomeCategoryOverridesJson;
 
     try {
       if (reader.availableBytes > 0) locale = reader.readString();
@@ -219,6 +237,8 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
       if (reader.availableBytes > 0) hiddenDefaultAmountsJson = reader.readString();
       if (reader.availableBytes > 0) customExpenseCategoriesJson = reader.readString();
       if (reader.availableBytes > 0) customIncomeCategoriesJson = reader.readString();
+      if (reader.availableBytes > 0) builtInExpenseCategoryOverridesJson = reader.readString();
+      if (reader.availableBytes > 0) builtInIncomeCategoryOverridesJson = reader.readString();
     } catch (_) {
       // Fallback if reading fails
     }
@@ -246,6 +266,8 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
       hiddenDefaultAmountsJson: hiddenDefaultAmountsJson,
       customExpenseCategoriesJson: customExpenseCategoriesJson,
       customIncomeCategoriesJson: customIncomeCategoriesJson,
+      builtInExpenseCategoryOverridesJson: builtInExpenseCategoryOverridesJson,
+      builtInIncomeCategoryOverridesJson: builtInIncomeCategoryOverridesJson,
     );
   }
 
@@ -276,7 +298,9 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
       ..writeString(obj.customQuickAmountsJson)
       ..writeString(obj.hiddenDefaultAmountsJson)
       ..writeString(obj.customExpenseCategoriesJson)
-      ..writeString(obj.customIncomeCategoriesJson);
+      ..writeString(obj.customIncomeCategoriesJson)
+      ..writeString(obj.builtInExpenseCategoryOverridesJson)
+      ..writeString(obj.builtInIncomeCategoryOverridesJson);
   }
 
   List<String> _readStringList(BinaryReader reader) {
