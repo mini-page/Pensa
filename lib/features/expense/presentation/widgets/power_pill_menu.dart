@@ -8,8 +8,8 @@ import '../../../../core/theme/app_colors.dart';
 /// An expandable power FAB.
 ///
 /// Shows a circular `+` button. When tapped the button rotates 135° (making it
-/// look like ×) and four action pills animate up above it:
-///   Quick Add · {symbol} Scanner · {symbol} Voice (Soon) · SMS
+/// look like ×) and five action pills animate up above it:
+///   Quick Add · Pay Directly · Scanner · Voice · SMS
 ///
 /// The SMS pill has a split interaction:
 ///   - Tapping the label / icon area opens the SMS settings sheet.
@@ -23,6 +23,7 @@ class PowerFab extends StatefulWidget {
     required this.onQuickAdd,
     required this.onScanner,
     required this.onPayDirectly,
+    required this.onVoice,
     required this.onSms,
     required this.onToggle,
     required this.smsParsingEnabled,
@@ -34,6 +35,9 @@ class PowerFab extends StatefulWidget {
 
   /// Opens the UPI QR scanner for the "Pay Directly" flow.
   final VoidCallback onPayDirectly;
+
+  /// Opens the voice entry bottom sheet.
+  final VoidCallback onVoice;
 
   /// Opens the SMS settings sheet.
   final VoidCallback onSms;
@@ -124,7 +128,7 @@ class PowerFabState extends State<PowerFab>
             staggerStart: 0.3,
             icon: Icons.mic_none_rounded,
             label: 'Voice',
-            badgeLabel: 'Soon',
+            onTap: () => _closeAndRun(widget.onVoice),
           ),
           const SizedBox(height: 8),
           _AnimatedPill(

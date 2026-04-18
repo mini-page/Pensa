@@ -43,6 +43,8 @@ class SettingsScreen extends ConsumerWidget {
     final backupPath = ref.watch(backupDirectoryPathProvider);
     final lastBackup = ref.watch(lastBackupDateTimeProvider);
 
+    final aiApiKey = ref.watch(aiApiKeyProvider);
+
     // Update check state
     final updateState = ref.watch(updateCheckerProvider);
 
@@ -242,6 +244,15 @@ class SettingsScreen extends ConsumerWidget {
                       'Permanently erase all transactions and accounts',
                   onTap: () => _resetAppData(context, ref),
                 ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // ── AI Features ───────────────────────────────────────────────
+            const SettingsSectionHeader(title: 'AI Features'),
+            SettingsCard(
+              children: [
+                _buildAiApiKeyTile(context, aiApiKey, controller),
               ],
             ),
             const SizedBox(height: 24),
@@ -610,6 +621,138 @@ class SettingsScreen extends ConsumerWidget {
           color: AppColors.danger),
       onTap: onTap,
     );
+  }
+
+  // ── AI Features tile ──────────────────────────────────────────────────────
+
+  Widget _buildAiApiKeyTile(
+    BuildContext context,
+    String currentKey,
+    AppPreferencesController controller,
+  ) {
+    final hasKey = currentKey.isNotEmpty;
+    final maskedKey = hasKey
+        ? '${currentKey.substring(0, currentKey.length.clamp(0, 6))}••••••••'
+        : 'Not set';
+
+    return ListTile(
+      leading: const SettingsTileIcon(icon: Icons.vpn_key_outlined),
+      title: const Text(
+        'AI API Key',
+        style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(
+        hasKey ? maskedKey : 'Tap to add your Gemini API key',
+        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (hasKey)
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded,
+                  color: AppColors.danger, size: 20),
+              tooltip: 'Remove key',
+              onPressed: () async {
+                await controller.setAiApiKey('');
+                if (context.mounted) {
+                  context.showSnackBar('AI API key removed.');
+                }
+              },
+            ),
+          const Icon(Icons.edit_outlined,
+              color: AppColors.textMuted, size: 20),
+        ],
+      ),
+      onTap: () => _showAiApiKeyDialog(context, currentKey, controller),
+    );
+  }
+
+  Future<void> _showAiApiKeyDialog(
+    BuildContext context,
+    String currentKey,
+    AppPreferencesController controller,
+  ) async {
+    final textController = TextEditingController(text: currentKey);
+    var obscure = true;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            title: const Text(
+              'AI API Key',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Enter your Gemini API key to enable AI-powered features '
+                  'like smart category detection. The key is stored locally '
+                  'on your device only.',
+                  style: TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 13,
+                      height: 1.5),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: textController,
+                  obscureText: obscure,
+                  decoration: InputDecoration(
+                    hintText: 'AIzaSy…',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscure
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                      ),
+                      onPressed: () =>
+                          setDialogState(() => obscure = !obscure),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  final key = textController.text.trim();
+                  await controller.setAiApiKey(key);
+                  if (ctx.mounted) Navigator.of(ctx).pop();
+                  if (context.mounted) {
+                    context.showSnackBar(
+                      key.isEmpty
+                          ? 'AI API key removed.'
+                          : 'AI API key saved.',
+                    );
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryBlue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    textController.dispose();
   }
 
   // ── Update tile ──────────────────────────────────────────────────────────

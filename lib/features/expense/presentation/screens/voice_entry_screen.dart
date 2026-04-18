@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'
+    show rootBundle;
 
 import '../../../../core/services/widget_sync_service.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -262,7 +266,7 @@ class _VoiceEntryScreenState extends State<VoiceEntryScreen> {
       return;
     }
 
-    final parsed = _VoiceCommandParser.parse(text);
+    final parsed = await _VoiceCommandParser.parse(text);
     setState(() {
       _state = _VoiceState.result;
       _recognisedText = text;
@@ -281,6 +285,8 @@ class _VoiceEntryScreenState extends State<VoiceEntryScreen> {
       initialAmount: cmd.amount,
       initialType: cmd.type,
       initialCategory: cmd.category,
+      initialNote: cmd.note,
+      initialDate: cmd.date,
     );
   }
 }
@@ -347,42 +353,77 @@ class _ParsedPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFDDE4F0)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: typeColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              typeLabel,
-              style: TextStyle(
-                color: typeColor,
-                fontWeight: FontWeight.w800,
-                fontSize: 12,
+          Row(
+            children: <Widget>[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: typeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  typeLabel,
+                  style: TextStyle(
+                    color: typeColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  command.category,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+              Text(
+                command.amount.toStringAsFixed(0),
+                style: TextStyle(
+                  color: typeColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 20,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              command.category,
+          if (command.note.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              command.note,
               style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                color: AppColors.textDark,
-                fontSize: 15,
+                color: AppColors.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-          Text(
-            command.amount.toStringAsFixed(0),
-            style: TextStyle(
-              color: typeColor,
-              fontWeight: FontWeight.w900,
-              fontSize: 20,
+          ],
+          if (command.date != null) ...<Widget>[
+            const SizedBox(height: 4),
+            Row(
+              children: <Widget>[
+                const Icon(Icons.calendar_today_rounded,
+                    size: 11, color: AppColors.textMuted),
+                const SizedBox(width: 4),
+                Text(
+                  'Yesterday',
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -400,18 +441,49 @@ class _ParsedCommand {
     required this.amount,
     required this.type,
     required this.category,
+    this.note = '',
+    this.date,
   });
 
   final double amount;
   final TransactionType type;
   final String category;
+  final String note;
+  final DateTime? date;
 }
 
 /// Heuristic NLP parser that extracts transaction data from free-form voice
-/// input strings.  It is intentionally permissive and prioritises recall over
-/// precision.
+/// input strings.  Keywords are loaded from [assets/data/voice_keywords.json]
+/// on first use and cached for the lifetime of the app.
 abstract final class _VoiceCommandParser {
-  static _ParsedCommand? parse(String rawText) {
+  // ── Dictionary cache ───────────────────────────────────────────────
+  static Map<String, dynamic>? _dict;
+
+  static Future<Map<String, dynamic>> _loadDict() async {
+    if (_dict != null) return _dict!;
+    final raw = await rootBundle.loadString('assets/data/voice_keywords.json');
+    _dict = (jsonDecode(raw) as Map<String, dynamic>);
+    return _dict!;
+  }
+
+  static List<String> _group(Map<String, dynamic> dict, String path) {
+    final parts = path.split('/');
+    dynamic node = dict;
+    for (final p in parts) {
+      if (node is Map<String, dynamic> && node.containsKey(p)) {
+        node = node[p];
+      } else {
+        return const <String>[];
+      }
+    }
+    if (node is List) return node.cast<String>();
+    return const <String>[];
+  }
+
+  // ── Public API ─────────────────────────────────────────────────────
+
+  static Future<_ParsedCommand?> parse(String rawText) async {
+    final dict = await _loadDict();
     final text = rawText.toLowerCase().trim();
 
     // ── 1. Extract amount ────────────────────────────────────────────
@@ -424,83 +496,108 @@ abstract final class _VoiceCommandParser {
     if (amount <= 0) return null;
 
     // ── 2. Determine transaction type ────────────────────────────────
-    final type = _detectType(text);
+    final type = _detectType(text, dict);
 
     // ── 3. Determine category ────────────────────────────────────────
-    final category = _detectCategory(text, type);
+    final category = _detectCategory(text, type, dict);
 
-    // ── 4. Note is always left empty here so the user can add it in AddExpenseScreen
-    return _ParsedCommand(amount: amount, type: type, category: category);
+    // ── 4. Extract note (remaining meaningful words) ─────────────────
+    final note = _extractNote(text, amountStr);
+
+    // ── 5. Detect date hint ──────────────────────────────────────────
+    final date = _detectDate(text, dict);
+
+    return _ParsedCommand(
+      amount: amount,
+      type: type,
+      category: category,
+      note: note,
+      date: date,
+    );
   }
 
-  static TransactionType _detectType(String text) {
-    if (text.contains('transfer') ||
-        text.contains('sent to') ||
-        text.contains('move') ||
-        text.contains('moved')) {
+  // ── Type detection ─────────────────────────────────────────────────
+
+  static TransactionType _detectType(
+      String text, Map<String, dynamic> dict) {
+    if (_any(text, _group(dict, 'transaction_types/transfer'))) {
       return TransactionType.transfer;
     }
-    if (text.contains('income') ||
-        text.contains('salary') ||
-        text.contains('sal ') ||
-        text.contains('earning') ||
-        text.contains('received') ||
-        text.contains('got ') ||
-        text.contains('award') ||
-        text.contains('refund') ||
-        text.contains('freelance') ||
-        text.contains('business income') ||
-        text.contains('grant') ||
-        text.contains('coupon')) {
+    if (_any(text, _group(dict, 'transaction_types/income'))) {
       return TransactionType.income;
     }
+    // Default: expense (also catches explicit expense keywords)
     return TransactionType.expense;
   }
 
-  static String _detectCategory(String text, TransactionType type) {
+  // ── Category detection ─────────────────────────────────────────────
+
+  static String _detectCategory(
+      String text, TransactionType type, Map<String, dynamic> dict) {
+    if (type == TransactionType.transfer) return 'Transfer';
+
     if (type == TransactionType.income) {
-      if (_any(text, ['salary', 'sal ', 'paycheck', 'pay slip'])) return 'Salary';
-      if (_any(text, ['freelance', 'freelancing', 'gig'])) return 'Salary'; // maps to Salary bucket
-      if (_any(text, ['award', 'prize', 'bonus'])) return 'Award';
-      if (_any(text, ['refund', 'cashback', 'reimburs'])) return 'Refund';
-      if (_any(text, ['coupon', 'voucher', 'discount'])) return 'Coupon';
-      if (_any(text, ['grant', 'scholarship'])) return 'Grant';
-      if (_any(text, ['lottery', 'lucky', 'jackpot'])) return 'Lottery';
+      final incomeCats =
+          dict['income_categories'] as Map<String, dynamic>? ?? {};
+      for (final entry in incomeCats.entries) {
+        final keywords = (entry.value as List).cast<String>();
+        if (_any(text, keywords)) return entry.key;
+      }
       return 'Salary'; // default income category
     }
 
-    if (type == TransactionType.transfer) {
-      return 'Transfer'; // not a real category but used as placeholder
-    }
-
     // Expense categories
-    if (_any(text, ['food', 'eat', 'lunch', 'dinner', 'breakfast', 'restaurant', 'cafe', 'snack', 'meal', 'grocery', 'groceries', 'vegetable', 'fruit'])) {
-      return 'Food & Dining';
-    }
-    if (_any(text, ['transport', 'bus', 'train', 'metro', 'taxi', 'cab', 'auto', 'uber', 'ola', 'petrol', 'fuel', 'commute', 'travel fare'])) {
-      return 'Transportation';
-    }
-    if (_any(text, ['shop', 'shopping', 'cloth', 'dress', 'buy', 'purchase', 'amazon', 'flipkart', 'myntra', 'market'])) {
-      return 'Shopping';
-    }
-    if (_any(text, ['bill', 'electricity', 'water', 'gas', 'internet', 'recharge', 'mobile', 'subscription', 'wifi', 'broadband', 'phone', 'utility'])) {
-      return 'Other'; // no dedicated Bills category; use Other
-    }
-    if (_any(text, ['doctor', 'hospital', 'medicine', 'medical', 'health', 'pharma', 'clinic', 'surgery', 'lab'])) {
-      return 'Other'; // no Medical category yet; use Other
-    }
-    if (_any(text, ['beauty', 'salon', 'spa', 'haircut', 'makeup', 'skincare', 'grooming'])) {
-      return 'Beauty & Care';
-    }
-    if (_any(text, ['travel', 'flight', 'hotel', 'trip', 'holiday', 'vacation', 'tour', 'ticket'])) {
-      return 'Travel';
-    }
-    if (_any(text, ['social', 'friend', 'party', 'event', 'outing', 'movie', 'game', 'entertainment', 'netflix', 'music', 'theatre', 'concert'])) {
-      return 'Social';
+    final expenseCats =
+        dict['expense_categories'] as Map<String, dynamic>? ?? {};
+    for (final entry in expenseCats.entries) {
+      final keywords = (entry.value as List).cast<String>();
+      if (_any(text, keywords)) return entry.key;
     }
 
     return 'Other';
   }
+
+  // ── Note extraction ────────────────────────────────────────────────
+
+  /// Returns a short human-readable note derived from the recognised text,
+  /// stripping the numeric amount and very common filler words.
+  static String _extractNote(String text, String amountStr) {
+    final stopWords = <String>{
+      'a', 'an', 'the', 'on', 'for', 'at', 'in', 'of', 'to', 'from',
+      'and', 'or', 'is', 'it', 'my', 'me', 'i', 'rs', 'inr', 'rupees',
+      'rupee', 'add', 'new', 'entry', 'pe', 'par', 'ka', 'ki', 'ke',
+      'se', 'ko', 'ne', 'kiya', 'kiya', 'hai', 'tha', 'thi',
+    };
+    final words = text
+        .replaceAll(amountStr, '')
+        .split(RegExp(r'\s+'))
+        .map((w) => w.replaceAll(RegExp(r'[^\w\s]'), '').trim())
+        .where((w) => w.isNotEmpty && !stopWords.contains(w))
+        .toList();
+    // Capitalise first word and join
+    if (words.isEmpty) return '';
+    words[0] =
+        words[0][0].toUpperCase() + words[0].substring(1);
+    return words.join(' ');
+  }
+
+  // ── Date detection ─────────────────────────────────────────────────
+
+  /// Returns [DateTime.now()] for "today" hints, yesterday's date for
+  /// "yesterday" hints, or `null` (caller should default to today).
+  static DateTime? _detectDate(
+      String text, Map<String, dynamic> dict) {
+    final hints = dict['date_hints'] as Map<String, dynamic>? ?? {};
+    final yesterdayKeys =
+        (hints['yesterday'] as List?)?.cast<String>() ?? const <String>[];
+    if (_any(text, yesterdayKeys)) {
+      return DateTime.now().subtract(const Duration(days: 1));
+    }
+    // "today" is the default; return null so caller uses its own default.
+    return null;
+  }
+
+  // ── Helper ─────────────────────────────────────────────────────────
 
   static bool _any(String text, List<String> keywords) =>
       keywords.any((k) => text.contains(k));

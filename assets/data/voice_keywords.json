@@ -1,0 +1,208 @@
+{
+  "_comment": "Voice keyword dictionary for XPensa. Each group lists all surface forms (lowercase) that map to that intent. Hinglish / transliterated terms are included.",
+
+  "transaction_types": {
+    "expense": [
+      "spent", "spend", "spending",
+      "paid", "pay", "paying",
+      "bought", "buy", "buying",
+      "purchased", "purchase",
+      "expended", "expend",
+      "deducted", "debit", "debited",
+      "charged", "charge",
+      "used", "cost", "costs",
+      "gave", "give",
+      "kharch", "kharcha", "kharchaa", "kharchna",
+      "diya", "diye", "de diya",
+      "gaya", "gayi", "gaye",
+      "nikla", "nikali", "nikal",
+      "liya", "liye",
+      "maara", "maari", "maar diya"
+    ],
+    "income": [
+      "received", "receive", "receiving",
+      "got", "get", "getting",
+      "earned", "earn", "earning",
+      "salary", "salry", "sal",
+      "income",
+      "credited", "credit",
+      "deposited", "deposit",
+      "paycheck", "pay slip",
+      "freelance", "freelancing", "gig",
+      "refund", "reimbursement", "cashback",
+      "award", "prize", "bonus",
+      "grant", "scholarship",
+      "lottery", "jackpot",
+      "dividend", "interest",
+      "mila", "milaa", "mile",
+      "aaya", "aayi", "aaye",
+      "jama", "jamaa",
+      "tankhwa", "takkhwa",
+      "wapas mila", "wapas aayi"
+    ],
+    "transfer": [
+      "transferred", "transfer", "transferring",
+      "sent to", "send to",
+      "moved", "move", "moving",
+      "shifted", "shift",
+      "bheja", "bhejaa", "bheje",
+      "bheja diya",
+      "dal diya", "daala",
+      "account se"
+    ]
+  },
+
+  "expense_categories": {
+    "Food & Dining": [
+      "food", "eat", "ate", "eating",
+      "lunch", "dinner", "breakfast", "brunch",
+      "restaurant", "cafe", "dhaba",
+      "snack", "snacks", "meal",
+      "grocery", "groceries",
+      "vegetable", "vegetables", "sabzi",
+      "fruit", "fruits",
+      "chai", "tea", "coffee",
+      "pizza", "burger", "sandwich",
+      "biryani", "dosa", "idli", "paratha",
+      "noodles", "pasta", "rice",
+      "sweet", "sweets", "mithai",
+      "bakery", "ice cream",
+      "khana", "khaana", "nashta",
+      "kha", "khaya", "khaaya",
+      "drink", "juice", "water bottle",
+      "hotel food", "takeaway", "delivery",
+      "zomato", "swiggy"
+    ],
+    "Transportation": [
+      "transport", "transportation",
+      "bus", "train", "metro", "local",
+      "taxi", "cab", "auto", "autorickshaw", "rickshaw",
+      "uber", "ola", "rapido",
+      "petrol", "diesel", "fuel",
+      "commute", "travel fare", "fare",
+      "tempo", "van",
+      "bike", "scooter", "scooty", "cycle",
+      "parking", "toll",
+      "driver", "ride"
+    ],
+    "Shopping": [
+      "shop", "shopping",
+      "cloth", "clothes", "clothing",
+      "dress", "shirt", "pant", "jeans",
+      "shoes", "footwear", "chappal",
+      "accessories", "bag", "wallet",
+      "amazon", "flipkart", "myntra", "meesho",
+      "market", "bazaar", "bazar", "mall",
+      "online shopping",
+      "kharida", "kharidaa", "kharidi",
+      "purchase", "bought"
+    ],
+    "Bills & Utilities": [
+      "bill", "bills",
+      "electricity", "bijli",
+      "water", "paani",
+      "gas", "lpg", "cylinder",
+      "internet", "wifi", "broadband",
+      "recharge", "mobile recharge", "sim",
+      "phone bill", "postpaid",
+      "subscription", "ott",
+      "netflix", "amazon prime", "hotstar", "spotify",
+      "utility", "utilities",
+      "rent", "house rent",
+      "emi", "loan"
+    ],
+    "Medical": [
+      "doctor", "dr",
+      "hospital", "clinic",
+      "medicine", "medicines", "tablet", "tablets",
+      "medical", "health",
+      "pharma", "pharmacy", "chemist",
+      "surgery", "operation",
+      "lab", "test", "blood test",
+      "ambulance",
+      "dawai", "dawa", "davaai"
+    ],
+    "Beauty & Care": [
+      "beauty", "salon", "saloon",
+      "spa", "massage",
+      "haircut", "hair cut", "baal",
+      "makeup", "cosmetics",
+      "skincare", "skin care",
+      "grooming",
+      "parlour", "parlor",
+      "wax", "facial", "manicure", "pedicure"
+    ],
+    "Travel": [
+      "travel", "travelling", "traveling",
+      "flight", "airplane", "air ticket",
+      "hotel", "hostel", "airbnb",
+      "trip", "holiday", "vacation",
+      "tour", "tourism",
+      "train ticket", "bus ticket", "ferry",
+      "visa", "passport",
+      "suitcase", "luggage",
+      "yatra", "safar"
+    ],
+    "Social": [
+      "social", "outing",
+      "friend", "friends",
+      "party", "birthday", "celebration",
+      "event", "concert",
+      "movie", "film", "cinema",
+      "game", "gaming",
+      "entertainment",
+      "music", "theatre", "theater",
+      "gift", "gifting",
+      "masti", "timepass",
+      "date", "hangout"
+    ],
+    "Education": [
+      "education", "school", "college", "university",
+      "tuition", "tution", "coaching",
+      "course", "class", "training",
+      "book", "books", "stationery",
+      "exam", "fees",
+      "padhai", "padhna"
+    ]
+  },
+
+  "income_categories": {
+    "Salary": [
+      "salary", "salry", "sal",
+      "paycheck", "pay slip",
+      "freelance", "freelancing", "gig",
+      "payment received", "project payment",
+      "tankhwa"
+    ],
+    "Award": [
+      "award", "prize", "bonus",
+      "incentive", "commission",
+      "inaam", "inam"
+    ],
+    "Refund": [
+      "refund", "cashback",
+      "reimbursement", "reimburse",
+      "wapas", "wapas aaya",
+      "return", "returned"
+    ],
+    "Coupon": [
+      "coupon", "voucher",
+      "discount received", "promo",
+      "offer"
+    ],
+    "Grant": [
+      "grant", "scholarship",
+      "subsidy", "stipend"
+    ],
+    "Lottery": [
+      "lottery", "lucky",
+      "jackpot", "raffle",
+      "qismat", "bhagya"
+    ]
+  },
+
+  "date_hints": {
+    "today": ["today", "aaj", "aj"],
+    "yesterday": ["yesterday", "kal", "kal ka", "kl"]
+  }
+}
