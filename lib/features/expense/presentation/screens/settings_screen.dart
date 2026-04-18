@@ -32,7 +32,6 @@ class SettingsScreen extends ConsumerWidget {
     final backupController = ref.read(backupControllerProvider);
 
     final smartReminders = ref.watch(smartRemindersEnabledProvider);
-    final privacyMode = ref.watch(privacyModeEnabledProvider);
     final isPinEnabled = ref.watch(isPinEnabledProvider);
     final themeMode = ref.watch(appThemeModeProvider);
     final locale = ref.watch(localeProvider);
@@ -98,13 +97,6 @@ class SettingsScreen extends ConsumerWidget {
             const SettingsSectionHeader(title: 'Security & Privacy'),
             SettingsCard(
               children: [
-                _buildToggleTile(
-                  icon: Icons.security_outlined,
-                  title: 'Privacy Mode',
-                  subtitle: 'Mask balances across the app',
-                  value: privacyMode,
-                  onChanged: controller.setPrivacyMode,
-                ),
                 _buildToggleTile(
                   icon: Icons.pin_outlined,
                   title: 'PIN Lock',

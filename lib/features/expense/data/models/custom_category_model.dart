@@ -63,14 +63,14 @@ class CustomCategoryModel {
 }
 
 List<CustomCategoryModel> customCategoriesFromJson(String json) {
-  if (json.isEmpty) return const [];
+  if (json.isEmpty) return <CustomCategoryModel>[];
   try {
     final list = jsonDecode(json) as List<dynamic>;
     return list
         .map((e) => CustomCategoryModel.fromJson(e as Map<String, dynamic>))
         .toList();
   } catch (_) {
-    return const [];
+    return <CustomCategoryModel>[];
   }
 }
 
