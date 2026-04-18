@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -46,6 +48,7 @@ class _SmsSettingsSheetState extends ConsumerState<SmsSettingsSheet> {
   bool _showManualEntry = false;
   bool _checkingPermission = false;
   bool? _permissionGranted;
+  StreamSubscription<SmsMessage>? _smsSub;
 
   @override
   void initState() {
@@ -53,7 +56,7 @@ class _SmsSettingsSheetState extends ConsumerState<SmsSettingsSheet> {
     _checkPermission();
     // Subscribe to incoming SMS from the broadcast service
     SmsBroadcastService.initialize();
-    SmsBroadcastService.messages.listen(_onSmsBroadcast);
+    _smsSub = SmsBroadcastService.messages.listen(_onSmsBroadcast);
   }
 
   void _onSmsBroadcast(SmsMessage msg) {
@@ -76,6 +79,7 @@ class _SmsSettingsSheetState extends ConsumerState<SmsSettingsSheet> {
 
   @override
   void dispose() {
+    _smsSub?.cancel();
     _senderCtrl.dispose();
     _bodyCtrl.dispose();
     super.dispose();
