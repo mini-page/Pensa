@@ -22,6 +22,7 @@ class PowerFab extends StatefulWidget {
     super.key,
     required this.onQuickAdd,
     required this.onScanner,
+    required this.onPayDirectly,
     required this.onSms,
     required this.onToggle,
     required this.smsParsingEnabled,
@@ -30,6 +31,9 @@ class PowerFab extends StatefulWidget {
 
   final VoidCallback onQuickAdd;
   final VoidCallback onScanner;
+
+  /// Opens the UPI QR scanner for the "Pay Directly" flow.
+  final VoidCallback onPayDirectly;
 
   /// Opens the SMS settings sheet.
   final VoidCallback onSms;
@@ -107,7 +111,7 @@ class PowerFabState extends State<PowerFab>
         if (_open) ...<Widget>[
           _AnimatedPill(
             animation: _ctrl,
-            staggerStart: 0.3,
+            staggerStart: 0.4,
             icon: Icons.sms_outlined,
             label: 'SMS',
             onTap: () => _closeAndRun(widget.onSms),
@@ -117,7 +121,7 @@ class PowerFabState extends State<PowerFab>
           const SizedBox(height: 8),
           _AnimatedPill(
             animation: _ctrl,
-            staggerStart: 0.2,
+            staggerStart: 0.3,
             icon: Icons.mic_none_rounded,
             label: 'Voice',
             badgeLabel: 'Soon',
@@ -125,10 +129,18 @@ class PowerFabState extends State<PowerFab>
           const SizedBox(height: 8),
           _AnimatedPill(
             animation: _ctrl,
-            staggerStart: 0.1,
+            staggerStart: 0.2,
             icon: Icons.qr_code_scanner_rounded,
             label: 'Scanner',
             onTap: () => _closeAndRun(widget.onScanner),
+          ),
+          const SizedBox(height: 8),
+          _AnimatedPill(
+            animation: _ctrl,
+            staggerStart: 0.1,
+            icon: Icons.currency_rupee_rounded,
+            label: 'Pay Directly',
+            onTap: () => _closeAndRun(widget.onPayDirectly),
           ),
           const SizedBox(height: 8),
           _AnimatedPill(

@@ -265,6 +265,9 @@ class _AppShellState extends ConsumerState<AppShell> {
               onScanner: () {
                 if (mounted) AppRoutes.pushScanner(context);
               },
+              onPayDirectly: () {
+                if (mounted) AppRoutes.pushUpiScanner(context);
+              },
               onSms: () {
                 if (mounted) showSmsSettingsSheet(context);
               },

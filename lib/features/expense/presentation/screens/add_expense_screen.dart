@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/account_model.dart';
@@ -24,6 +25,7 @@ class AddExpenseScreen extends ConsumerStatefulWidget {
     this.initialAccountId,
     this.initialToAccountId,
     this.initialType = TransactionType.expense,
+    this.payUpiUri,
   });
 
   final String? expenseId;
@@ -35,13 +37,24 @@ class AddExpenseScreen extends ConsumerStatefulWidget {
   final String? initialToAccountId;
   final TransactionType initialType;
 
+  /// When non-null the screen starts in "Pay Directly" mode.
+  ///
+  /// The save button is replaced with a **Pay** button that launches the UPI
+  /// deep-link.  After the user returns from the UPI app the button
+  /// automatically reverts to the normal save/check button.
+  final String? payUpiUri;
+
   bool get isEditing => expenseId != null;
+
+  /// Whether the screen was opened for the "Pay Directly" flow.
+  bool get isPayMode => payUpiUri != null;
 
   @override
   ConsumerState<AddExpenseScreen> createState() => _AddExpenseScreenState();
 }
 
-class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
+class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen>
+    with WidgetsBindingObserver {
   late final TextEditingController _noteController;
   late final FocusNode _noteFocusNode;
   late String _amountExpression;
@@ -54,9 +67,18 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   late bool _hasExplicitAccountChoice;
   bool _isSaving = false;
 
+  /// True once the user has returned from the UPI app (pay-mode only).
+  bool _paymentDone = false;
+
+  /// True while the UPI launch is in progress.
+  bool _isLaunching = false;
+
   @override
   void initState() {
     super.initState();
+    if (widget.isPayMode) {
+      WidgetsBinding.instance.addObserver(this);
+    }
     final now = DateTime.now();
     final seedDate = widget.initialDate ?? now;
     final shouldInjectCurrentTime = widget.initialDate != null &&
@@ -93,11 +115,28 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   @override
   void dispose() {
+    if (widget.isPayMode) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
     _noteFocusNode
       ..removeListener(_handleNoteFocusChanged)
       ..dispose();
     _noteController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // When the user returns from the UPI app, switch the button to Save.
+    if (widget.isPayMode &&
+        !_paymentDone &&
+        _isLaunching &&
+        state == AppLifecycleState.resumed) {
+      setState(() {
+        _paymentDone = true;
+        _isLaunching = false;
+      });
+    }
   }
 
   @override
@@ -469,24 +508,48 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             foregroundColor: const Color(0xFFC23358),
                             child: const Icon(Icons.backspace_outlined),
                           ),
-                          AddExpenseKeypadButton(
-                            onTap: canSubmit ? _saveExpense : null,
-                            isEnabled: canSubmit,
-                            backgroundColor: AppColors.textDark,
-                            foregroundColor: Colors.white,
-                            child: _isSaving
-                                ? const SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white,
+                          // Pay Directly mode: show "Pay" before payment,
+                          // then revert to the normal save/check button.
+                          if (widget.isPayMode && !_paymentDone)
+                            AddExpenseKeypadButton(
+                              onTap: canSubmit ? _launchUpiPayment : null,
+                              isEnabled: canSubmit,
+                              backgroundColor: const Color(0xFF1A7A4A),
+                              foregroundColor: Colors.white,
+                              child: _isLaunching
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
                                       ),
-                                    ),
-                                  )
-                                : const Icon(Icons.check_rounded),
-                          ),
+                                    )
+                                  : const Icon(Icons.currency_rupee_rounded),
+                            )
+                          else
+                            AddExpenseKeypadButton(
+                              onTap: canSubmit ? _saveExpense : null,
+                              isEnabled: canSubmit,
+                              backgroundColor: AppColors.textDark,
+                              foregroundColor: Colors.white,
+                              child: _isSaving
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : const Icon(Icons.check_rounded),
+                            ),
                         ],
                       ),
                     ],
@@ -1067,6 +1130,48 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         picked.minute,
       );
     });
+  }
+
+  Future<void> _launchUpiPayment() async {
+    if (_isLaunching || widget.payUpiUri == null) return;
+
+    // Build a fresh URI with the current amount so the UPI app pre-fills it.
+    final amountState = evaluateAmountExpression(_amountExpression);
+    final baseUri = Uri.parse(widget.payUpiUri!);
+    final updatedParams = Map<String, String>.from(baseUri.queryParameters);
+    if (amountState.previewAmount > 0) {
+      updatedParams['am'] = amountState.previewAmount.toStringAsFixed(2);
+    }
+    if (_noteController.text.trim().isNotEmpty) {
+      updatedParams['tn'] = _noteController.text.trim();
+    }
+    final launchUri = Uri(
+      scheme: baseUri.scheme,
+      host: baseUri.host,
+      path: baseUri.path,
+      queryParameters: updatedParams,
+    );
+
+    setState(() => _isLaunching = true);
+
+    final launched = await launchUrl(
+      launchUri,
+      mode: LaunchMode.externalApplication,
+    );
+
+    if (!mounted) return;
+
+    if (!launched) {
+      setState(() => _isLaunching = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No UPI app found. Please install Google Pay, '
+              'PhonePe, or Paytm.'),
+        ),
+      );
+    }
+    // If launched successfully, _isLaunching stays true until
+    // didChangeAppLifecycleState(resumed) fires when the user returns.
   }
 
   Future<void> _saveExpense() async {
