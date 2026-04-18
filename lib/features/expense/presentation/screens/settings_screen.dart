@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/update_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
 import 'settings/settings_widgets.dart';
@@ -41,6 +43,9 @@ class SettingsScreen extends ConsumerWidget {
     final backupFrequency = ref.watch(backupFrequencyProvider);
     final backupPath = ref.watch(backupDirectoryPathProvider);
     final lastBackup = ref.watch(lastBackupDateTimeProvider);
+
+    // Update check state
+    final updateState = ref.watch(updateCheckerProvider);
 
     final lastBackupText = lastBackup != null
         ? DateFormat('MMM d, yyyy HH:mm').format(lastBackup)
@@ -278,6 +283,7 @@ class SettingsScreen extends ConsumerWidget {
                         builder: (_) => const AboutScreen()),
                   ),
                 ),
+                _buildUpdateTile(context, ref, updateState),
                 _buildActionTile(
                   icon: Icons.volunteer_activism_outlined,
                   title: 'Support the Project',
@@ -665,6 +671,187 @@ class SettingsScreen extends ConsumerWidget {
       trailing: const Icon(Icons.chevron_right_rounded,
           color: AppColors.danger),
       onTap: onTap,
+    );
+  }
+
+  // ── Update tile ──────────────────────────────────────────────────────────
+
+  Widget _buildUpdateTile(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<UpdateInfo?> state,
+  ) {
+    // Loading
+    if (state.isLoading) {
+      return ListTile(
+        leading: const SettingsTileIcon(icon: Icons.system_update_outlined),
+        title: const Text(
+          'Checking for Updates\u2026',
+          style: TextStyle(
+              color: AppColors.textDark, fontWeight: FontWeight.w700),
+        ),
+        subtitle: const Text(
+          'Please wait a moment',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+        ),
+        trailing: const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    // Update available
+    if (state.hasValue && state.value != null) {
+      final info = state.value!;
+      return ListTile(
+        leading: const SettingsTileIcon(icon: Icons.system_update_outlined),
+        title: const Text(
+          'Update Available',
+          style: TextStyle(
+              color: AppColors.primaryBlue, fontWeight: FontWeight.w700),
+        ),
+        subtitle: Text(
+          'v${info.latestVersion} is ready to download',
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+        ),
+        trailing: const _UpdateBadge(label: 'Download'),
+        onTap: () => _showUpdateDialog(context, ref, info),
+      );
+    }
+
+    // Error
+    if (state.hasError) {
+      return ListTile(
+        leading: const SettingsTileIcon(icon: Icons.system_update_outlined),
+        title: const Text(
+          'Check for Updates',
+          style: TextStyle(
+              color: AppColors.textDark, fontWeight: FontWeight.w700),
+        ),
+        subtitle: const Text(
+          'Could not connect. Tap to retry',
+          style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+        ),
+        trailing:
+            const Icon(Icons.refresh_rounded, color: AppColors.textMuted),
+        onTap: () => ref.read(updateCheckerProvider.notifier).check(),
+      );
+    }
+
+    // Default: not yet checked
+    return ListTile(
+      leading: const SettingsTileIcon(icon: Icons.system_update_outlined),
+      title: const Text(
+        'Check for Updates',
+        style: TextStyle(
+            color: AppColors.textDark, fontWeight: FontWeight.w700),
+      ),
+      subtitle: Text(
+        'Current version: v${AppConstants.version}',
+        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+      ),
+      trailing:
+          const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+      onTap: () => ref.read(updateCheckerProvider.notifier).check(),
+    );
+  }
+
+  Future<void> _showUpdateDialog(
+    BuildContext context,
+    WidgetRef ref,
+    UpdateInfo info,
+  ) async {
+    final notes = info.releaseNotes;
+    final hasNotes = notes != null && notes.trim().isNotEmpty;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.system_update_outlined, color: AppColors.primaryBlue),
+            SizedBox(width: 10),
+            Text('Update Available'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'A new version of XPensa is available.\n\n'
+              'v${AppConstants.version}  \u2192  v${info.latestVersion}',
+              style: const TextStyle(fontSize: 14),
+            ),
+            if (hasNotes) ...[
+              const SizedBox(height: 12),
+              const Text(
+                "What's new:",
+                style: TextStyle(
+                    fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                notes!.length > 280
+                    ? '${notes.substring(0, 280).trimRight()}\u2026'
+                    : notes,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textMuted),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Later'),
+          ),
+          FilledButton.icon(
+            onPressed: () async {
+              Navigator.of(ctx).pop();
+              final uri = Uri.parse(info.releaseUrl);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri,
+                    mode: LaunchMode.externalApplication);
+              }
+            },
+            icon: const Icon(Icons.download_rounded, size: 18),
+            label: const Text('Download'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Private widget ────────────────────────────────────────────────────────────
+
+/// Small pill badge used as the trailing widget on the "Update Available" tile.
+class _UpdateBadge extends StatelessWidget {
+  const _UpdateBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.primaryBlue,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }

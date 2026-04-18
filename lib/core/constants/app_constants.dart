@@ -1,7 +1,7 @@
 /// Application-wide constants shared across the app.
 abstract final class AppConstants {
-  /// The current app version string.  Update this when bumping pubspec.yaml.
-  static const String version = '2.0.0';
+  /// The current app version string.  Keep in sync with pubspec.yaml.
+  static const String version = '2.1.0';
 
   /// Display name shown on the about dialog and in the drawer footer.
   static const String appName = 'XPensa';
