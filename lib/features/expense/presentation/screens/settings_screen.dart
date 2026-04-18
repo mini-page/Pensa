@@ -373,6 +373,7 @@ class SettingsScreen extends ConsumerWidget {
   }
 
 
+  Future<void> _handlePinToggle(
     BuildContext context,
     WidgetRef ref,
     bool enable,
