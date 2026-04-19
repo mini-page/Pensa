@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/theme/app_colors.dart';
+import '../../../../../core/theme/app_tokens.dart';
 import '../../../data/models/account_model.dart';
 import 'records_filter.dart';
 
@@ -24,7 +25,7 @@ class RecordsFilterChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 42,
+      height: 44,
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: RecordsFilter.values.map((filter) {
@@ -41,11 +42,31 @@ class RecordsFilterChips extends StatelessWidget {
                   onFilterSelected(filter);
                 }
               },
+              avatar: isSelected
+                  ? const Icon(
+                      Icons.check_rounded,
+                      size: 14,
+                      color: Colors.white,
+                    )
+                  : null,
+              showCheckmark: false,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              side: BorderSide(
+                color: isSelected
+                    ? AppColors.primaryBlue
+                    : AppColors.primaryBlue.withValues(alpha: 0.2),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadii.pill),
+              ),
               selectedColor: AppColors.primaryBlue,
-              backgroundColor: AppColors.lightBlueBg,
+              backgroundColor: Colors.white,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               labelStyle: TextStyle(
                 color: isSelected ? Colors.white : const Color(0xFF48607E),
-                fontWeight: FontWeight.w700,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+                fontSize: 13,
               ),
             ),
           );
@@ -76,24 +97,33 @@ class RecordsAccountDropdown extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: PopupMenuButton<String>(
         color: Colors.white,
-        onSelected: onAccountSelected,
+        elevation: 0,
+        position: PopupMenuPosition.under,
+        shadowColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+        ),
+        constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
         itemBuilder: (context) => <PopupMenuEntry<String>>[
           PopupMenuItem<String>(
             value: allAccountsKey,
+            height: 44,
             child: const Text('All accounts'),
           ),
           ...accounts.map((account) {
             return PopupMenuItem<String>(
               value: account.id,
+              height: 44,
               child: Text(account.name),
             );
           }),
         ],
+        onSelected: onAccountSelected,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppRadii.pill),
             boxShadow: const <BoxShadow>[
               BoxShadow(
                 color: AppColors.cardShadow,
@@ -101,6 +131,9 @@ class RecordsAccountDropdown extends StatelessWidget {
                 offset: Offset(0, 8),
               ),
             ],
+            border: Border.all(
+              color: AppColors.primaryBlue.withValues(alpha: 0.08),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

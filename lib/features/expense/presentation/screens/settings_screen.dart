@@ -463,11 +463,17 @@ class SettingsScreen extends ConsumerWidget {
         subtitle,
         style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
       ),
-      trailing: DropdownButton<String>(
+      trailing: _SettingsChoiceMenu(
         value: value,
-        underline: const SizedBox(),
         onChanged: onChanged,
-        items: items,
+        options: items
+            .map(
+              (item) => (
+                value: item.value!,
+                label: (item.child as Text).data ?? item.value!,
+              ),
+            )
+            .toList(growable: false),
       ),
     );
   }
@@ -484,18 +490,15 @@ class SettingsScreen extends ConsumerWidget {
         style:
             TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700),
       ),
-      trailing: DropdownButton<String>(
+      trailing: _SettingsChoiceMenu(
         value: currentMode.name,
-        underline: const SizedBox(),
         onChanged: (value) {
-          if (value != null) {
-            controller.setThemeMode(value);
-          }
+          if (value != null) controller.setThemeMode(value);
         },
-        items: const [
-          DropdownMenuItem(value: 'light', child: Text('Light')),
-          DropdownMenuItem(value: 'dark', child: Text('Dark')),
-          DropdownMenuItem(value: 'system', child: Text('System')),
+        options: const <({String value, String label})>[
+          (value: 'light', label: 'Light'),
+          (value: 'dark', label: 'Dark'),
+          (value: 'system', label: 'System'),
         ],
       ),
     );
@@ -513,24 +516,16 @@ class SettingsScreen extends ConsumerWidget {
         style:
             TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700),
       ),
-      trailing: DropdownButton<String>(
+      trailing: _SettingsChoiceMenu(
         value: AppConstants.locales.any((l) => l.locale == currentLocale)
             ? currentLocale
             : AppConstants.locales.first.locale,
-        underline: const SizedBox(),
         onChanged: (value) {
-          if (value != null) {
-            controller.setLocale(value);
-          }
+          if (value != null) controller.setLocale(value);
         },
-        items: AppConstants.locales
-            .map(
-              (l) => DropdownMenuItem(
-                value: l.locale,
-                child: Text(l.label),
-              ),
-            )
-            .toList(),
+        options: AppConstants.locales
+            .map((l) => (value: l.locale, label: l.label))
+            .toList(growable: false),
       ),
     );
   }
@@ -547,24 +542,16 @@ class SettingsScreen extends ConsumerWidget {
         style:
             TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w700),
       ),
-      trailing: DropdownButton<String>(
+      trailing: _SettingsChoiceMenu(
         value: AppConstants.currencies.any((c) => c.symbol == currentCurrency)
             ? currentCurrency
             : AppConstants.currencies.first.symbol,
-        underline: const SizedBox(),
         onChanged: (value) {
-          if (value != null) {
-            controller.setCurrencySymbol(value);
-          }
+          if (value != null) controller.setCurrencySymbol(value);
         },
-        items: AppConstants.currencies
-            .map(
-              (c) => DropdownMenuItem(
-                value: c.symbol,
-                child: Text(c.label),
-              ),
-            )
-            .toList(),
+        options: AppConstants.currencies
+            .map((c) => (value: c.symbol, label: c.label))
+            .toList(growable: false),
       ),
     );
   }
@@ -1122,13 +1109,104 @@ class _AiKeyRow extends StatelessWidget {
               ),
             ),
       onTap: hasKey
-          ? () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Delete the key first to add a new one.'),
-                  duration: Duration(seconds: 2),
-                ),
+          ? () => context.showSnackBar(
+                'Delete the key first to add a new one.',
+                type: AppFeedbackType.warning,
               )
           : onAdd,
+    );
+  }
+}
+
+class _SettingsChoiceMenu extends StatelessWidget {
+  const _SettingsChoiceMenu({
+    required this.value,
+    required this.onChanged,
+    required this.options,
+  });
+
+  final String value;
+  final ValueChanged<String?> onChanged;
+  final List<({String value, String label})> options;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedLabel = options
+        .firstWhere(
+          (option) => option.value == value,
+          orElse: () => options.first,
+        )
+        .label;
+
+    return PopupMenuButton<String>(
+      tooltip: '',
+      surfaceTintColor: Colors.transparent,
+      position: PopupMenuPosition.under,
+      constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
+      onSelected: (newValue) => onChanged(newValue),
+      itemBuilder: (_) => options
+          .map(
+            (option) => PopupMenuItem<String>(
+              value: option.value,
+              height: 44,
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      option.label,
+                      style: TextStyle(
+                        color: option.value == value
+                            ? AppColors.primaryBlue
+                            : AppColors.textDark,
+                        fontWeight: option.value == value
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  if (option.value == value)
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      size: 16,
+                      color: AppColors.primaryBlue,
+                    ),
+                ],
+              ),
+            ),
+          )
+          .toList(growable: false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceAccent,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          border: Border.all(
+            color: AppColors.primaryBlue.withValues(alpha: 0.22),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              selectedLabel,
+              style: const TextStyle(
+                color: AppColors.primaryBlue,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.expand_more_rounded,
+              color: AppColors.primaryBlue,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1177,24 +1255,14 @@ class _AiModelSelector extends StatelessWidget {
         model.description,
         style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
       ),
-      trailing: DropdownButton<String>(
+      trailing: _SettingsChoiceMenu(
         value: selected,
-        underline: const SizedBox(),
-        isDense: true,
         onChanged: (v) {
           if (v != null) onChanged(v);
         },
-        items: _kGeminiModels
-            .map(
-              (m) => DropdownMenuItem(
-                value: m.id,
-                child: Text(
-                  m.label,
-                  style: const TextStyle(fontSize: 13),
-                ),
-              ),
-            )
-            .toList(),
+        options: _kGeminiModels
+            .map((m) => (value: m.id, label: m.label))
+            .toList(growable: false),
       ),
     );
   }

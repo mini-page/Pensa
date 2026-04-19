@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_tokens.dart';
+import '../../../../core/utils/context_extensions.dart';
 import '../../../../core/utils/tag_parser.dart';
 import '../../../../routes/app_routes.dart';
 import '../../data/models/account_model.dart';
@@ -127,6 +129,13 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                   : AppColors.textDark,
             ),
             tooltip: 'Sort',
+            elevation: 0,
+            position: PopupMenuPosition.under,
+            shadowColor: Colors.transparent,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+            ),
             onSelected: (order) => setState(() => _sortOrder = order),
             itemBuilder: (_) => [
               CheckedPopupMenuItem(
@@ -228,16 +237,23 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                     ),
                     if (_tagFilter.isNotEmpty) ...[
                       const SizedBox(width: 10),
-                      Chip(
+                      InputChip(
                         label: Text('#$_tagFilter'),
                         deleteIcon: const Icon(Icons.close, size: 16),
                         onDeleted: () => setState(() => _tagFilter = ''),
+                        selected: true,
                         backgroundColor:
                             AppColors.primaryBlue.withValues(alpha: 0.1),
                         labelStyle: const TextStyle(
                           color: AppColors.primaryBlue,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                           fontSize: 13,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadii.pill),
+                        ),
+                        side: BorderSide(
+                          color: AppColors.primaryBlue.withValues(alpha: 0.24),
                         ),
                       ),
                     ],
@@ -469,9 +485,10 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Transaction removed.')));
+    context.showSnackBar(
+      'Transaction removed.',
+      type: AppFeedbackType.success,
+    );
   }
 
   Future<void> _pickCustomDateRange(BuildContext context) async {
@@ -503,8 +520,9 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
     String currencySymbol,
   ) async {
     if (expenses.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No transactions to export.')),
+      context.showSnackBar(
+        'No transactions to export.',
+        type: AppFeedbackType.warning,
       );
       return;
     }
@@ -627,14 +645,22 @@ class _CategoryFilterChip extends StatelessWidget {
     final isFiltered = selectedCategory != allCategoriesKey;
     return PopupMenuButton<String>(
       color: Colors.white,
+      elevation: 0,
+      position: PopupMenuPosition.under,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
+      constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
       onSelected: onChanged,
       itemBuilder: (_) => <PopupMenuEntry<String>>[
         PopupMenuItem(
           value: allCategoriesKey,
+          height: 44,
           child: const Text('All categories'),
         ),
         ...categories.map(
-          (cat) => PopupMenuItem(value: cat, child: Text(cat)),
+          (cat) => PopupMenuItem(value: cat, height: 44, child: Text(cat)),
         ),
       ],
       child: Container(
@@ -643,7 +669,7 @@ class _CategoryFilterChip extends StatelessWidget {
           color: isFiltered
               ? AppColors.primaryBlue.withValues(alpha: 0.1)
               : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
           boxShadow: const <BoxShadow>[
             BoxShadow(
               color: AppColors.cardShadow,
@@ -653,7 +679,7 @@ class _CategoryFilterChip extends StatelessWidget {
           ],
           border: isFiltered
               ? Border.all(color: AppColors.primaryBlue, width: 1.5)
-              : null,
+              : Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.08)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
