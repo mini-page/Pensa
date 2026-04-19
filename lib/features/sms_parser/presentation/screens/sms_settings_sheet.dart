@@ -18,6 +18,7 @@ import '../../domain/sms_broadcast_service.dart';
 import '../../domain/sms_monitoring_service.dart';
 import '../../domain/sms_parser_engine.dart';
 import '../provider/sms_providers.dart';
+import '../../../../shared/widgets/app_toggle_switch.dart';
 
 /// Shows the SMS Parsing management sheet as a modal bottom sheet.
 Future<void> showSmsSettingsSheet(BuildContext context) {
@@ -383,9 +384,8 @@ class _ToggleCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Switch(
+              AppToggleSwitch(
                 value: enabled,
-                activeColor: AppColors.primaryBlue,
                 onChanged: onChanged,
               ),
             ],

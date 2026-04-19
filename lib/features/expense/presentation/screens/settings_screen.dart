@@ -14,6 +14,7 @@ import '../../../../core/theme/app_tokens.dart';
 import 'settings/settings_widgets.dart';
 import '../../../../core/utils/context_extensions.dart';
 import '../../../../shared/widgets/app_filter_sheet.dart';
+import '../../../../shared/widgets/app_toggle_switch.dart';
 import '../provider/account_providers.dart';
 import '../provider/backup_providers.dart';
 import '../provider/budget_providers.dart';
@@ -594,10 +595,9 @@ class SettingsScreen extends ConsumerWidget {
         subtitle,
         style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
       ),
-      trailing: Switch.adaptive(
+      trailing: AppToggleSwitch(
         value: value,
         onChanged: onChanged,
-        activeTrackColor: AppColors.primaryBlue,
       ),
     );
   }
@@ -1014,9 +1014,8 @@ class _AiFeaturesCard extends StatelessWidget {
               fontSize: 11,
             ),
           ),
-          trailing: Switch.adaptive(
+          trailing: AppToggleSwitch(
             value: aiEnabled,
-            activeTrackColor: AppColors.primaryBlue,
             onChanged: _hasKey ? (v) => controller.setAiEnabled(v) : (_) {},
           ),
         ),
@@ -1329,9 +1328,8 @@ class _AiFeatureToggle extends StatelessWidget {
         subtitle,
         style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
       ),
-      trailing: Switch.adaptive(
+      trailing: AppToggleSwitch(
         value: value,
-        activeTrackColor: AppColors.primaryBlue,
         onChanged: onChanged,
       ),
     );
