@@ -404,10 +404,16 @@ class SettingsScreen extends ConsumerWidget {
 
     try {
       await ref.read(backupControllerProvider).resetAllData();
-      ref.invalidate(expenseListProvider);
-      ref.invalidate(accountListProvider);
-      ref.invalidate(budgetTargetsProvider);
-      ref.invalidate(recurringSubscriptionListProvider);
+      // Defer invalidations to the next microtask so Riverpod has time to
+      // settle any in-progress subscription-count bookkeeping before each
+      // subsequent invalidation fires (avoids the
+      // "pausedActiveSubscriptionCount" assertion in debug mode).
+      await Future.microtask(() {
+        ref.invalidate(expenseListProvider);
+        ref.invalidate(accountListProvider);
+        ref.invalidate(budgetTargetsProvider);
+        ref.invalidate(recurringSubscriptionListProvider);
+      });
       if (context.mounted) {
         context.showSnackBar('All data has been reset.');
       }
