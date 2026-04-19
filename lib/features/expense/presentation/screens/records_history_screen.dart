@@ -95,11 +95,8 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
     final currencySymbol = ref.watch(currencySymbolProvider);
 
     // Collect unique categories for filter
-    final allCategories = expenses
-        .map((e) => e.category)
-        .toSet()
-        .toList(growable: false)
-      ..sort();
+    final allCategories =
+        expenses.map((e) => e.category).toSet().toList(growable: false)..sort();
 
     final filteredExpenses = _filterExpenses(expenses, accountMap);
     final groupedExpenses = _groupExpenses(filteredExpenses);
@@ -235,8 +232,9 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                         label: Text('#$_tagFilter'),
                         deleteIcon: const Icon(Icons.close, size: 16),
                         onDeleted: () => setState(() => _tagFilter = ''),
-                        backgroundColor:
-                            AppColors.primaryBlue.withValues(alpha: 0.1),
+                        backgroundColor: AppColors.primaryBlue.withValues(
+                          alpha: 0.1,
+                        ),
                         labelStyle: const TextStyle(
                           color: AppColors.primaryBlue,
                           fontWeight: FontWeight.w700,
@@ -257,20 +255,20 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                             'The transaction history is not available right now.',
                       )
                     : expenseState.isLoading && expenses.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
-                        : filteredExpenses.isEmpty
-                            ? _buildEmptyState()
-                            : RecordsExpenseList(
-                                groupedExpenses: groupedExpenses,
-                                accounts: accounts,
-                                privacyModeEnabled: privacyModeEnabled,
-                                groupLabel: _groupLabel,
-                                accountLabelFor: _accountLabelFor,
-                                onEdit: (expense) =>
-                                    _openEditExpenseScreen(context, expense),
-                                onDelete: (expense) => _confirmDeleteExpense(
-                                    context, ref, expense),
-                              ),
+                    ? const Center(child: CircularProgressIndicator())
+                    : filteredExpenses.isEmpty
+                    ? _buildEmptyState()
+                    : RecordsExpenseList(
+                        groupedExpenses: groupedExpenses,
+                        accounts: accounts,
+                        privacyModeEnabled: privacyModeEnabled,
+                        groupLabel: _groupLabel,
+                        accountLabelFor: _accountLabelFor,
+                        onEdit: (expense) =>
+                            _openEditExpenseScreen(context, expense),
+                        onDelete: (expense) =>
+                            _confirmDeleteExpense(context, ref, expense),
+                      ),
               ),
             ],
           ),
@@ -301,48 +299,55 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
     final weekStart = today.subtract(Duration(days: now.weekday - 1));
     final parsedQuery = SearchQuery.parse(_searchQuery);
 
-    final filtered = expenses.where((expense) {
-      final localDate = expense.date.toLocal();
-      final dateOnly = DateUtils.dateOnly(localDate);
+    final filtered = expenses
+        .where((expense) {
+          final localDate = expense.date.toLocal();
+          final dateOnly = DateUtils.dateOnly(localDate);
 
-      if (_selectedAccountFilter != _allAccountsKey &&
-          expense.accountId != _selectedAccountFilter) return false;
-
-      if (_selectedCategoryFilter != _allCategoriesKey &&
-          expense.category != _selectedCategoryFilter) return false;
-
-      if (_tagFilter.isNotEmpty) {
-        final tags = TagParser.extractTags(expense.note);
-        if (!tags.contains(_tagFilter.toLowerCase())) return false;
-      }
-
-      switch (_selectedFilter) {
-        case RecordsFilter.today:
-          if (!DateUtils.isSameDay(dateOnly, today)) return false;
-        case RecordsFilter.week:
-          if (dateOnly.isBefore(weekStart) || dateOnly.isAfter(today)) {
+          if (_selectedAccountFilter != _allAccountsKey &&
+              expense.accountId != _selectedAccountFilter)
             return false;
-          }
-        case RecordsFilter.month:
-          if (dateOnly.year != today.year || dateOnly.month != today.month) {
+
+          if (_selectedCategoryFilter != _allCategoriesKey &&
+              expense.category != _selectedCategoryFilter)
             return false;
-          }
-        case RecordsFilter.future:
-          if (!dateOnly.isAfter(today)) return false;
-        case RecordsFilter.custom:
-          if (_customDateRange != null) {
-            if (dateOnly.isBefore(_customDateRange!.start) ||
-                dateOnly.isAfter(_customDateRange!.end)) return false;
-          }
-        case RecordsFilter.all:
-          break;
-      }
 
-      if (!parsedQuery.isEmpty &&
-          !parsedQuery.matchesExpense(expense, accountMap)) return false;
+          if (_tagFilter.isNotEmpty) {
+            final tags = TagParser.extractTags(expense.note);
+            if (!tags.contains(_tagFilter.toLowerCase())) return false;
+          }
 
-      return true;
-    }).toList(growable: false);
+          switch (_selectedFilter) {
+            case RecordsFilter.today:
+              if (!DateUtils.isSameDay(dateOnly, today)) return false;
+            case RecordsFilter.week:
+              if (dateOnly.isBefore(weekStart) || dateOnly.isAfter(today)) {
+                return false;
+              }
+            case RecordsFilter.month:
+              if (dateOnly.year != today.year ||
+                  dateOnly.month != today.month) {
+                return false;
+              }
+            case RecordsFilter.future:
+              if (!dateOnly.isAfter(today)) return false;
+            case RecordsFilter.custom:
+              if (_customDateRange != null) {
+                if (dateOnly.isBefore(_customDateRange!.start) ||
+                    dateOnly.isAfter(_customDateRange!.end))
+                  return false;
+              }
+            case RecordsFilter.all:
+              break;
+          }
+
+          if (!parsedQuery.isEmpty &&
+              !parsedQuery.matchesExpense(expense, accountMap))
+            return false;
+
+          return true;
+        })
+        .toList(growable: false);
 
     final result = List<ExpenseModel>.from(filtered);
     switch (_sortOrder) {
@@ -513,16 +518,14 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
       final type = e.type.name;
       final category = _csvEscape(e.category);
       final note = _csvEscape(TagParser.stripTags(e.note));
-      final amount =
-          e.isIncome ? e.amount.toStringAsFixed(2) : (-e.amount).toStringAsFixed(2);
+      final amount = e.isIncome
+          ? e.amount.toStringAsFixed(2)
+          : (-e.amount).toStringAsFixed(2);
       final tags = TagParser.extractTags(e.note).map((t) => '#$t').join(' ');
       buffer.writeln('$date,$type,$category,$note,$amount,$tags');
     }
 
-    await Share.share(
-      buffer.toString(),
-      subject: 'XPensa Transactions Export',
-    );
+    await Share.share(buffer.toString(), subject: 'XPensa Transactions Export');
   }
 
   String _csvEscape(String value) {
@@ -589,12 +592,15 @@ class _RecordsSearchBar extends StatelessWidget {
                     Icons.clear_rounded,
                     color: AppColors.textMuted,
                   ),
+                  tooltip: 'Clear search',
                   onPressed: onClear,
                 )
               : null,
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 14,
+            horizontal: 4,
+          ),
         ),
         onChanged: onChanged,
       ),
@@ -627,9 +633,7 @@ class _CategoryFilterChip extends StatelessWidget {
           value: allCategoriesKey,
           child: const Text('All categories'),
         ),
-        ...categories.map(
-          (cat) => PopupMenuItem(value: cat, child: Text(cat)),
-        ),
+        ...categories.map((cat) => PopupMenuItem(value: cat, child: Text(cat))),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -655,8 +659,7 @@ class _CategoryFilterChip extends StatelessWidget {
             Icon(
               Icons.category_outlined,
               size: 18,
-              color:
-                  isFiltered ? AppColors.primaryBlue : AppColors.textMuted,
+              color: isFiltered ? AppColors.primaryBlue : AppColors.textMuted,
             ),
             const SizedBox(width: 8),
             Text(

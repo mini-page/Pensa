@@ -175,10 +175,7 @@ class AccountCard extends StatelessWidget {
                 },
                 itemBuilder: (context) => const <PopupMenuEntry<String>>[
                   PopupMenuItem<String>(value: 'edit', child: Text('Edit')),
-                  PopupMenuItem<String>(
-                    value: 'delete',
-                    child: Text('Delete'),
-                  ),
+                  PopupMenuItem<String>(value: 'delete', child: Text('Delete')),
                 ],
               ),
             ],
@@ -363,11 +360,14 @@ class SliverAccountsTabView extends ConsumerWidget {
                   IconButton.filled(
                     onPressed: () => _openAccountEditor(context, ref),
                     icon: const Icon(Icons.add_rounded),
+                    tooltip: 'Add account',
                     style: IconButton.styleFrom(
                       backgroundColor: AppColors.primaryBlue,
                     ),
-                    constraints:
-                        const BoxConstraints(minWidth: 40, minHeight: 40),
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
                   ),
                 ],
               ),
@@ -392,27 +392,23 @@ class SliverAccountsTabView extends ConsumerWidget {
             )
           else
             SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final account = accounts[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: AccountCard(
-                      account: account,
-                      balanceText: maskAmount(
-                        currency.format(account.balance.abs()),
-                        masked: privacyModeEnabled,
-                      ),
-                      isNegative: account.balance < 0,
-                      onTap: () =>
-                          _openAccountEditor(context, ref, account: account),
-                      onDelete: () =>
-                          _deleteAccount(context, ref, account),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final account = accounts[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: AccountCard(
+                    account: account,
+                    balanceText: maskAmount(
+                      currency.format(account.balance.abs()),
+                      masked: privacyModeEnabled,
                     ),
-                  );
-                },
-                childCount: accounts.length,
-              ),
+                    isNegative: account.balance < 0,
+                    onTap: () =>
+                        _openAccountEditor(context, ref, account: account),
+                    onDelete: () => _deleteAccount(context, ref, account),
+                  ),
+                );
+              }, childCount: accounts.length),
             ),
         ],
       ),
@@ -427,7 +423,9 @@ class SliverAccountsTabView extends ConsumerWidget {
     final result = await showAccountEditorSheet(context, account: account);
     if (result == null) return;
 
-    await ref.read(accountControllerProvider).saveAccount(
+    await ref
+        .read(accountControllerProvider)
+        .saveAccount(
           id: result.id,
           name: result.name,
           iconKey: result.iconKey,

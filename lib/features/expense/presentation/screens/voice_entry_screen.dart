@@ -230,7 +230,10 @@ class _VoiceEntryScreenState extends State<VoiceEntryScreen> {
           const Text(
             "Couldn't understand that. Please try again.",
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 16),
         ],
@@ -295,26 +298,33 @@ class _MicButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: AppColors.primaryBlue,
-            shape: BoxShape.circle,
-            boxShadow: <BoxShadow>[
-              BoxShadow(
-                color: AppColors.primaryBlue.withValues(alpha: 0.35),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+      child: Semantics(
+        button: true,
+        label: 'Start voice entry',
+        child: Tooltip(
+          message: 'Start voice entry',
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue,
+                shape: BoxShape.circle,
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: AppColors.primaryBlue.withValues(alpha: 0.35),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: const Icon(
-            Icons.mic_rounded,
-            color: Colors.white,
-            size: 32,
+              child: const Icon(
+                Icons.mic_rounded,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
           ),
         ),
       ),
@@ -459,8 +469,10 @@ abstract final class _VoiceCommandParser {
 
   static String _detectCategory(String text, TransactionType type) {
     if (type == TransactionType.income) {
-      if (_any(text, ['salary', 'sal ', 'paycheck', 'pay slip'])) return 'Salary';
-      if (_any(text, ['freelance', 'freelancing', 'gig'])) return 'Salary'; // maps to Salary bucket
+      if (_any(text, ['salary', 'sal ', 'paycheck', 'pay slip']))
+        return 'Salary';
+      if (_any(text, ['freelance', 'freelancing', 'gig']))
+        return 'Salary'; // maps to Salary bucket
       if (_any(text, ['award', 'prize', 'bonus'])) return 'Award';
       if (_any(text, ['refund', 'cashback', 'reimburs'])) return 'Refund';
       if (_any(text, ['coupon', 'voucher', 'discount'])) return 'Coupon';
@@ -474,28 +486,120 @@ abstract final class _VoiceCommandParser {
     }
 
     // Expense categories
-    if (_any(text, ['food', 'eat', 'lunch', 'dinner', 'breakfast', 'restaurant', 'cafe', 'snack', 'meal', 'grocery', 'groceries', 'vegetable', 'fruit'])) {
+    if (_any(text, [
+      'food',
+      'eat',
+      'lunch',
+      'dinner',
+      'breakfast',
+      'restaurant',
+      'cafe',
+      'snack',
+      'meal',
+      'grocery',
+      'groceries',
+      'vegetable',
+      'fruit',
+    ])) {
       return 'Food & Dining';
     }
-    if (_any(text, ['transport', 'bus', 'train', 'metro', 'taxi', 'cab', 'auto', 'uber', 'ola', 'petrol', 'fuel', 'commute', 'travel fare'])) {
+    if (_any(text, [
+      'transport',
+      'bus',
+      'train',
+      'metro',
+      'taxi',
+      'cab',
+      'auto',
+      'uber',
+      'ola',
+      'petrol',
+      'fuel',
+      'commute',
+      'travel fare',
+    ])) {
       return 'Transportation';
     }
-    if (_any(text, ['shop', 'shopping', 'cloth', 'dress', 'buy', 'purchase', 'amazon', 'flipkart', 'myntra', 'market'])) {
+    if (_any(text, [
+      'shop',
+      'shopping',
+      'cloth',
+      'dress',
+      'buy',
+      'purchase',
+      'amazon',
+      'flipkart',
+      'myntra',
+      'market',
+    ])) {
       return 'Shopping';
     }
-    if (_any(text, ['bill', 'electricity', 'water', 'gas', 'internet', 'recharge', 'mobile', 'subscription', 'wifi', 'broadband', 'phone', 'utility'])) {
+    if (_any(text, [
+      'bill',
+      'electricity',
+      'water',
+      'gas',
+      'internet',
+      'recharge',
+      'mobile',
+      'subscription',
+      'wifi',
+      'broadband',
+      'phone',
+      'utility',
+    ])) {
       return 'Other'; // no dedicated Bills category; use Other
     }
-    if (_any(text, ['doctor', 'hospital', 'medicine', 'medical', 'health', 'pharma', 'clinic', 'surgery', 'lab'])) {
+    if (_any(text, [
+      'doctor',
+      'hospital',
+      'medicine',
+      'medical',
+      'health',
+      'pharma',
+      'clinic',
+      'surgery',
+      'lab',
+    ])) {
       return 'Other'; // no Medical category yet; use Other
     }
-    if (_any(text, ['beauty', 'salon', 'spa', 'haircut', 'makeup', 'skincare', 'grooming'])) {
+    if (_any(text, [
+      'beauty',
+      'salon',
+      'spa',
+      'haircut',
+      'makeup',
+      'skincare',
+      'grooming',
+    ])) {
       return 'Beauty & Care';
     }
-    if (_any(text, ['travel', 'flight', 'hotel', 'trip', 'holiday', 'vacation', 'tour', 'ticket'])) {
+    if (_any(text, [
+      'travel',
+      'flight',
+      'hotel',
+      'trip',
+      'holiday',
+      'vacation',
+      'tour',
+      'ticket',
+    ])) {
       return 'Travel';
     }
-    if (_any(text, ['social', 'friend', 'party', 'event', 'outing', 'movie', 'game', 'entertainment', 'netflix', 'music', 'theatre', 'concert'])) {
+    if (_any(text, [
+      'social',
+      'friend',
+      'party',
+      'event',
+      'outing',
+      'movie',
+      'game',
+      'entertainment',
+      'netflix',
+      'music',
+      'theatre',
+      'concert',
+    ])) {
       return 'Social';
     }
 
