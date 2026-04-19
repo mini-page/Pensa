@@ -119,10 +119,10 @@ class BackupController {
   /// directory, creating it automatically if needed.
   ///
   /// No runtime storage permission is required — backups are written to the
-  /// app-scoped external storage directory.
+  /// app-scoped external storage directory (or the user-chosen location).
   ///
-  /// Returns the [DateTime] of the backup on success.
-  Future<DateTime?> backupNow() async {
+  /// Throws on failure so the caller can surface an error message.
+  Future<void> backupNow() async {
     final targetDir = await _resolveBackupDir();
 
     final tmpFile = await _datasource.createBackup();
@@ -135,7 +135,6 @@ class BackupController {
 
     final now = DateTime.now();
     await _ref.read(appPreferencesControllerProvider).setLastBackup(now);
-    return now;
   }
 
   Future<bool> importData() async {

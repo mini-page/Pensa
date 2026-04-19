@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -154,14 +155,13 @@ class SettingsScreen extends ConsumerWidget {
             const SettingsSectionHeader(title: 'Data Management'),
             SettingsCard(
               children: [
-                // ── Backup Now ──────────────────────────────────────────
-                if (autoBackup)
-                  _buildActionTile(
-                    icon: Icons.backup_rounded,
-                    title: 'Backup Now',
-                    subtitle: 'Save a backup immediately',
-                    onTap: () => _backupNow(context, ref),
-                  ),
+                // ── Backup Now (always visible) ─────────────────────────
+                _buildActionTile(
+                  icon: Icons.backup_rounded,
+                  title: 'Backup Now',
+                  subtitle: 'Save a backup to the current backup location',
+                  onTap: () => _backupNow(context, ref),
+                ),
                 _buildActionTile(
                   icon: Icons.cloud_upload_outlined,
                   title: 'Export Data',
@@ -202,7 +202,7 @@ class SettingsScreen extends ConsumerWidget {
                   value: autoBackup,
                   onChanged: (val) => controller.setAutoBackup(val),
                 ),
-                if (autoBackup) ...[
+                if (autoBackup)
                   _buildSelectionTile(
                     icon: Icons.timer_outlined,
                     title: 'Backup Frequency',
@@ -218,22 +218,8 @@ class SettingsScreen extends ConsumerWidget {
                           value: 'monthly', child: Text('Monthly')),
                     ],
                   ),
-                  ListTile(
-                    leading:
-                        const SettingsTileIcon(icon: Icons.folder_open_rounded),
-                    title: const Text(
-                      'Backup Location',
-                      style: TextStyle(
-                          color: AppColors.textDark,
-                          fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: Text(
-                      backupPath ?? 'Auto-selected on first backup',
-                      style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 12),
-                    ),
-                  ),
-                ],
+                // ── Backup Location (always visible & tappable) ─────────
+                _buildBackupLocationTile(context, ref, backupPath),
                 ListTile(
                   leading: const SettingsTileIcon(icon: Icons.update_rounded),
                   title: const Text(
@@ -467,16 +453,9 @@ class SettingsScreen extends ConsumerWidget {
     final backupController = ref.read(backupControllerProvider);
     try {
       context.showSnackBar('Creating backup…');
-      final savedAt = await backupController.backupNow();
+      await backupController.backupNow();
       if (context.mounted) {
-        if (savedAt != null) {
-          context.showSnackBar('Backup saved successfully.');
-        } else {
-          context.showSnackBar(
-            'Backup failed: no backup folder configured.',
-            type: AppFeedbackType.warning,
-          );
-        }
+        context.showSnackBar('Backup saved successfully.');
       }
     } catch (e) {
       if (context.mounted) {
@@ -564,6 +543,100 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  /// Opens the system folder picker (Android Storage Access Framework) and
+  /// saves the chosen path.  No runtime storage permission is required —
+  /// SAF grants per-URI access automatically.
+  Future<void> _pickBackupDirectory(
+      BuildContext context, WidgetRef ref) async {
+    final path = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Choose Backup Location',
+      lockParentWindow: true,
+    );
+    if (path == null) return; // user cancelled
+
+    await ref
+        .read(appPreferencesControllerProvider)
+        .setBackupDirectory(path);
+
+    if (context.mounted && _isInsideAppSandbox(path)) {
+      context.showSnackBar(
+        'This location is inside app storage and will be lost if the app is '
+        'uninstalled or its data is cleared. Tap "Backup Location" to choose '
+        'a safer folder (e.g. Downloads).',
+        type: AppFeedbackType.warning,
+      );
+    }
+  }
+
+  /// Returns `true` when [path] is inside the app-scoped sandbox
+  /// (`Android/data/<pkg>/` or `Android/obb/<pkg>/`), which is erased on
+  /// app-data clear or uninstall.
+  bool _isInsideAppSandbox(String path) {
+    return path.contains('/Android/data/') || path.contains('/Android/obb/');
+  }
+
+  /// Tappable Backup Location tile that shows the current path and a warning
+  /// badge when the location is inside the app sandbox.
+  Widget _buildBackupLocationTile(
+      BuildContext context, WidgetRef ref, String? backupPath) {
+    final isSandbox =
+        backupPath != null && _isInsideAppSandbox(backupPath);
+
+    String displayPath;
+    if (backupPath == null) {
+      displayPath = 'Tap to choose — auto-selected on first backup';
+    } else {
+      // Show only the last two path segments for readability.
+      final parts = backupPath.split('/').where((s) => s.isNotEmpty).toList();
+      displayPath = parts.length >= 2
+          ? '…/${parts[parts.length - 2]}/${parts.last}'
+          : backupPath;
+    }
+
+    return ListTile(
+      leading: const SettingsTileIcon(icon: Icons.folder_open_rounded),
+      title: Row(
+        children: [
+          const Text(
+            'Backup Location',
+            style: TextStyle(
+                color: AppColors.textDark, fontWeight: FontWeight.w700),
+          ),
+          if (isSandbox) ...[
+            const SizedBox(width: 6),
+            Tooltip(
+              message:
+                  'This location is inside app storage and may be lost on uninstall.',
+              child: Icon(Icons.warning_amber_rounded,
+                  size: 16, color: Colors.orange.shade700),
+            ),
+          ],
+        ],
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            displayPath,
+            style:
+                const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+          if (isSandbox)
+            Text(
+              'Tap to choose a safer location (e.g. Downloads)',
+              style: TextStyle(
+                  color: Colors.orange.shade700,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500),
+            ),
+        ],
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded,
+          color: AppColors.textMuted),
+      onTap: () => _pickBackupDirectory(context, ref),
     );
   }
 
