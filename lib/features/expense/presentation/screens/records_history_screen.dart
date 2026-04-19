@@ -10,11 +10,14 @@ import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/utils/context_extensions.dart';
 import '../../../../core/utils/tag_parser.dart';
 import '../../../../routes/app_routes.dart';
+import '../../../../shared/widgets/app_filter_sheet.dart';
 import '../../data/models/account_model.dart';
 import '../../data/models/expense_model.dart';
 import '../provider/account_providers.dart';
 import '../provider/expense_providers.dart';
 import '../provider/preferences_providers.dart';
+import '../widgets/account_icons.dart';
+import '../widgets/expense_category.dart';
 import '../widgets/ui_feedback.dart';
 import 'records_history/records_cards.dart';
 import 'records_history/records_expense_list.dart';
@@ -53,7 +56,7 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
 
   RecordsFilter _selectedFilter = RecordsFilter.all;
   String _selectedAccountFilter = _allAccountsKey;
-  String _selectedCategoryFilter = _allCategoriesKey;
+  Set<String> _selectedCategoryFilters = {};
   String _tagFilter = '';
   _SortOrder _sortOrder = _SortOrder.newest;
   DateTimeRange? _customDateRange;
@@ -121,7 +124,7 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
         ),
         actions: [
           // Sort button
-          PopupMenuButton<_SortOrder>(
+          IconButton(
             icon: Icon(
               Icons.sort_rounded,
               color: _sortOrder != _SortOrder.newest
@@ -129,36 +132,7 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                   : AppColors.textDark,
             ),
             tooltip: 'Sort',
-            elevation: 0,
-            position: PopupMenuPosition.under,
-            shadowColor: Colors.transparent,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadii.lg),
-            ),
-            onSelected: (order) => setState(() => _sortOrder = order),
-            itemBuilder: (_) => [
-              CheckedPopupMenuItem(
-                value: _SortOrder.newest,
-                checked: _sortOrder == _SortOrder.newest,
-                child: const Text('Newest first'),
-              ),
-              CheckedPopupMenuItem(
-                value: _SortOrder.oldest,
-                checked: _sortOrder == _SortOrder.oldest,
-                child: const Text('Oldest first'),
-              ),
-              CheckedPopupMenuItem(
-                value: _SortOrder.amountDesc,
-                checked: _sortOrder == _SortOrder.amountDesc,
-                child: const Text('Amount ↓'),
-              ),
-              CheckedPopupMenuItem(
-                value: _SortOrder.amountAsc,
-                checked: _sortOrder == _SortOrder.amountAsc,
-                child: const Text('Amount ↑'),
-              ),
-            ],
+            onPressed: () => _showSortSheet(context),
           ),
           // CSV export
           IconButton(
@@ -219,21 +193,22 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    RecordsAccountDropdown(
-                      accounts: accounts,
-                      onAccountSelected: (value) {
-                        setState(() => _selectedAccountFilter = value);
-                      },
-                      allAccountsKey: _allAccountsKey,
-                      accountFilterLabel: _accountFilterLabel(accountMap),
+                    _FilterPill(
+                      icon: Icons.account_balance_wallet_outlined,
+                      label: _accountFilterLabel(accountMap),
+                      isActive: _selectedAccountFilter != _allAccountsKey,
+                      onTap: () => _showAccountSheet(context, accounts),
                     ),
                     const SizedBox(width: 10),
-                    _CategoryFilterChip(
-                      categories: allCategories,
-                      selectedCategory: _selectedCategoryFilter,
-                      allCategoriesKey: _allCategoriesKey,
-                      onChanged: (v) =>
-                          setState(() => _selectedCategoryFilter = v),
+                    _FilterPill(
+                      icon: Icons.category_outlined,
+                      label: _selectedCategoryFilters.isEmpty
+                          ? 'Category'
+                          : _selectedCategoryFilters.length == 1
+                              ? _selectedCategoryFilters.first
+                              : '${_selectedCategoryFilters.length} categories',
+                      isActive: _selectedCategoryFilters.isNotEmpty,
+                      onTap: () => _showCategorySheet(context, allCategories),
                     ),
                     if (_tagFilter.isNotEmpty) ...[
                       const SizedBox(width: 10),
@@ -323,8 +298,8 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
         return false;
       }
 
-      if (_selectedCategoryFilter != _allCategoriesKey &&
-          expense.category != _selectedCategoryFilter) {
+      if (_selectedCategoryFilters.isNotEmpty &&
+          !_selectedCategoryFilters.contains(expense.category)) {
         return false;
       }
 
@@ -461,6 +436,109 @@ class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
       initialToAccountId: expense.toAccountId,
       initialType: expense.type,
     );
+  }
+
+  Future<void> _showSortSheet(BuildContext context) async {
+    final chosen = await showSingleSelectSheet<_SortOrder>(
+      context: context,
+      title: 'Sort by',
+      selectedValue: _sortOrder,
+      items: const <FilterSheetItem<_SortOrder>>[
+        FilterSheetItem(
+          value: _SortOrder.newest,
+          label: 'Newest first',
+          icon: Icons.arrow_downward_rounded,
+          iconColor: AppColors.primaryBlue,
+        ),
+        FilterSheetItem(
+          value: _SortOrder.oldest,
+          label: 'Oldest first',
+          icon: Icons.arrow_upward_rounded,
+          iconColor: AppColors.primaryBlue,
+        ),
+        FilterSheetItem(
+          value: _SortOrder.amountDesc,
+          label: 'Amount (high → low)',
+          icon: Icons.trending_down_rounded,
+          iconColor: AppColors.danger,
+        ),
+        FilterSheetItem(
+          value: _SortOrder.amountAsc,
+          label: 'Amount (low → high)',
+          icon: Icons.trending_up_rounded,
+          iconColor: AppColors.success,
+        ),
+      ],
+    );
+    if (chosen != null && mounted) {
+      setState(() => _sortOrder = chosen);
+    }
+  }
+
+  Future<void> _showAccountSheet(
+    BuildContext context,
+    List<AccountModel> accounts,
+  ) async {
+    final chosen = await showSingleSelectSheet<String>(
+      context: context,
+      title: 'Filter by account',
+      selectedValue: _selectedAccountFilter,
+      items: <FilterSheetItem<String>>[
+        const FilterSheetItem(
+          value: _allAccountsKey,
+          label: 'All accounts',
+          icon: Icons.account_balance_wallet_outlined,
+          iconColor: AppColors.primaryBlue,
+        ),
+        ...accounts.map(
+          (a) => FilterSheetItem<String>(
+            value: a.id,
+            label: a.name,
+            icon: resolveAccountIcon(a.iconKey),
+            iconColor: AppColors.primaryBlue,
+          ),
+        ),
+      ],
+    );
+    if (chosen != null && mounted) {
+      setState(() => _selectedAccountFilter = chosen);
+    }
+  }
+
+  Future<void> _showCategorySheet(
+    BuildContext context,
+    List<String> allCategories,
+  ) async {
+    final allExpCats = ref.read(allExpenseCategoriesProvider);
+    final allIncCats = ref.read(allIncomeCategoriesProvider);
+    final allKnown = [...allExpCats, ...allIncCats];
+
+    final items = allCategories.map((name) {
+      ExpenseCategory? cat;
+      for (final c in allKnown) {
+        if (c.name == name) {
+          cat = c;
+          break;
+        }
+      }
+      return FilterSheetItem<String>(
+        value: name,
+        label: name,
+        icon: cat?.icon ?? Icons.category_outlined,
+        iconColor: cat?.color,
+      );
+    }).toList(growable: false);
+
+    final chosen = await showMultiSelectSheet<String>(
+      context: context,
+      title: 'Filter by category',
+      items: items,
+      selectedValues: _selectedCategoryFilters,
+      searchable: allCategories.length > 5,
+    );
+    if (chosen != null && mounted) {
+      setState(() => _selectedCategoryFilters = chosen);
+    }
   }
 
   Future<void> _confirmDeleteExpense(
@@ -626,49 +704,31 @@ class _RecordsSearchBar extends StatelessWidget {
   }
 }
 
-/// Category filter chip/dropdown for records screen.
-class _CategoryFilterChip extends StatelessWidget {
-  const _CategoryFilterChip({
-    required this.categories,
-    required this.selectedCategory,
-    required this.allCategoriesKey,
-    required this.onChanged,
+/// Pill button used in the account/category filter row.
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.icon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
   });
 
-  final List<String> categories;
-  final String selectedCategory;
-  final String allCategoriesKey;
-  final ValueChanged<String> onChanged;
+  final IconData icon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final isFiltered = selectedCategory != allCategoriesKey;
-    return PopupMenuButton<String>(
-      color: Colors.white,
-      elevation: 0,
-      position: PopupMenuPosition.under,
-      shadowColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-      ),
-      constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
-      onSelected: onChanged,
-      itemBuilder: (_) => <PopupMenuEntry<String>>[
-        PopupMenuItem(
-          value: allCategoriesKey,
-          height: 44,
-          child: const Text('All categories'),
-        ),
-        ...categories.map(
-          (cat) => PopupMenuItem(value: cat, height: 44, child: Text(cat)),
-        ),
-      ],
-      child: Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isFiltered
-              ? AppColors.primaryBlue.withValues(alpha: 0.1)
-              : Colors.white,
+          color:
+              isActive ? AppColors.primaryBlue.withValues(alpha: 0.1) : Colors.white,
           borderRadius: BorderRadius.circular(AppRadii.pill),
           boxShadow: const <BoxShadow>[
             BoxShadow(
@@ -677,7 +737,7 @@ class _CategoryFilterChip extends StatelessWidget {
               offset: Offset(0, 8),
             ),
           ],
-          border: isFiltered
+          border: isActive
               ? Border.all(color: AppColors.primaryBlue, width: 1.5)
               : Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.08)),
         ),
@@ -685,22 +745,23 @@ class _CategoryFilterChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Icon(
-              Icons.category_outlined,
+              icon,
               size: 18,
-              color: isFiltered ? AppColors.primaryBlue : AppColors.textMuted,
+              color: isActive ? AppColors.primaryBlue : AppColors.textMuted,
             ),
             const SizedBox(width: 8),
             Text(
-              isFiltered ? selectedCategory : 'Category',
+              label,
               style: TextStyle(
-                color: isFiltered ? AppColors.primaryBlue : AppColors.textDark,
+                color: isActive ? AppColors.primaryBlue : AppColors.textDark,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(width: 4),
             Icon(
               Icons.keyboard_arrow_down_rounded,
-              color: isFiltered ? AppColors.primaryBlue : AppColors.textMuted,
+              size: 18,
+              color: isActive ? AppColors.primaryBlue : AppColors.textMuted,
             ),
           ],
         ),

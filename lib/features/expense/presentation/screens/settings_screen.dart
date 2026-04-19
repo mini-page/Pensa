@@ -13,6 +13,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_tokens.dart';
 import 'settings/settings_widgets.dart';
 import '../../../../core/utils/context_extensions.dart';
+import '../../../../shared/widgets/app_filter_sheet.dart';
 import '../provider/account_providers.dart';
 import '../provider/backup_providers.dart';
 import '../provider/budget_providers.dart';
@@ -465,6 +466,7 @@ class SettingsScreen extends ConsumerWidget {
       ),
       trailing: _SettingsChoiceMenu(
         value: value,
+        sheetTitle: title,
         onChanged: onChanged,
         options: items
             .where((item) => item.value != null)
@@ -473,7 +475,12 @@ class SettingsScreen extends ConsumerWidget {
               final label = labelWidget is Text
                   ? (labelWidget.data ?? item.value!)
                   : item.value!;
-              return (value: item.value!, label: label);
+              return (
+                value: item.value!,
+                label: label,
+                icon: null as IconData?,
+                iconColor: null as Color?,
+              );
             })
             .toList(growable: false),
       ),
@@ -494,13 +501,14 @@ class SettingsScreen extends ConsumerWidget {
       ),
       trailing: _SettingsChoiceMenu(
         value: currentMode.name,
+        sheetTitle: 'Appearance',
         onChanged: (value) {
           if (value != null) controller.setThemeMode(value);
         },
-        options: const <({String value, String label})>[
-          (value: 'light', label: 'Light'),
-          (value: 'dark', label: 'Dark'),
-          (value: 'system', label: 'System'),
+        options: const <({String value, String label, IconData? icon, Color? iconColor})>[
+          (value: 'light', label: 'Light', icon: Icons.wb_sunny_outlined, iconColor: Color(0xFFFFB648)),
+          (value: 'dark', label: 'Dark', icon: Icons.nights_stay_outlined, iconColor: Color(0xFF6D8FFF)),
+          (value: 'system', label: 'System', icon: Icons.phone_android_outlined, iconColor: AppColors.primaryBlue),
         ],
       ),
     );
@@ -522,11 +530,13 @@ class SettingsScreen extends ConsumerWidget {
         value: AppConstants.locales.any((l) => l.locale == currentLocale)
             ? currentLocale
             : AppConstants.locales.first.locale,
+        sheetTitle: 'Language',
+        searchable: true,
         onChanged: (value) {
           if (value != null) controller.setLocale(value);
         },
         options: AppConstants.locales
-            .map((l) => (value: l.locale, label: l.label))
+            .map((l) => (value: l.locale, label: l.label, icon: (Icons.language_rounded as IconData?), iconColor: (AppColors.primaryBlue as Color?)))
             .toList(growable: false),
       ),
     );
@@ -548,11 +558,13 @@ class SettingsScreen extends ConsumerWidget {
         value: AppConstants.currencies.any((c) => c.symbol == currentCurrency)
             ? currentCurrency
             : AppConstants.currencies.first.symbol,
+        sheetTitle: 'Currency',
+        searchable: true,
         onChanged: (value) {
           if (value != null) controller.setCurrencySymbol(value);
         },
         options: AppConstants.currencies
-            .map((c) => (value: c.symbol, label: c.label))
+            .map((c) => (value: c.symbol, label: c.label, icon: (Icons.payments_outlined as IconData?), iconColor: (AppColors.success as Color?)))
             .toList(growable: false),
       ),
     );
@@ -1125,11 +1137,16 @@ class _SettingsChoiceMenu extends StatelessWidget {
     required this.value,
     required this.onChanged,
     required this.options,
+    this.sheetTitle = 'Choose',
+    this.searchable = false,
   });
 
   final String value;
   final ValueChanged<String?> onChanged;
-  final List<({String value, String label})> options;
+  final List<({String value, String label, IconData? icon, Color? iconColor})>
+      options;
+  final String sheetTitle;
+  final bool searchable;
 
   @override
   Widget build(BuildContext context) {
@@ -1144,44 +1161,8 @@ class _SettingsChoiceMenu extends StatelessWidget {
         )
         .label;
 
-    return PopupMenuButton<String>(
-      tooltip: '',
-      surfaceTintColor: Colors.transparent,
-      position: PopupMenuPosition.under,
-      constraints: const BoxConstraints(minWidth: 220, maxWidth: 280),
-      onSelected: (newValue) => onChanged(newValue),
-      itemBuilder: (_) => options
-          .map(
-            (option) => PopupMenuItem<String>(
-              value: option.value,
-              height: 44,
-              child: Row(
-                children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      option.label,
-                      style: TextStyle(
-                        color: option.value == value
-                            ? AppColors.primaryBlue
-                            : AppColors.textDark,
-                        fontWeight: option.value == value
-                            ? FontWeight.w800
-                            : FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                  if (option.value == value)
-                    const Icon(
-                      Icons.check_circle_rounded,
-                      size: 16,
-                      color: AppColors.primaryBlue,
-                    ),
-                ],
-              ),
-            ),
-          )
-          .toList(growable: false),
+    return GestureDetector(
+      onTap: () => _openSheet(context),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
@@ -1214,6 +1195,29 @@ class _SettingsChoiceMenu extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openSheet(BuildContext context) async {
+    final items = options
+        .map(
+          (o) => FilterSheetItem<String>(
+            value: o.value,
+            label: o.label,
+            icon: o.icon,
+            iconColor: o.iconColor,
+          ),
+        )
+        .toList(growable: false);
+
+    final chosen = await showSingleSelectSheet<String>(
+      context: context,
+      title: sheetTitle,
+      items: items,
+      selectedValue: value,
+      searchable: searchable,
+    );
+
+    if (chosen != null) onChanged(chosen);
   }
 }
 
@@ -1263,11 +1267,17 @@ class _AiModelSelector extends StatelessWidget {
       ),
       trailing: _SettingsChoiceMenu(
         value: selected,
+        sheetTitle: 'Gemini Model',
         onChanged: (v) {
           if (v != null) onChanged(v);
         },
         options: _kGeminiModels
-            .map((m) => (value: m.id, label: m.label))
+            .map((m) => (
+                  value: m.id,
+                  label: m.label,
+                  icon: Icons.auto_awesome_outlined as IconData?,
+                  iconColor: AppColors.primaryBlue as Color?,
+                ))
             .toList(growable: false),
       ),
     );
