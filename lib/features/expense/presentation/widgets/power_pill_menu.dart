@@ -218,7 +218,6 @@ class _AnimatedPill extends StatefulWidget {
     required this.icon,
     required this.label,
     required this.infoText,
-    this.badgeLabel,
     this.highlighted = false,
     this.onTap,
     this.trailingToggleValue,
@@ -235,7 +234,6 @@ class _AnimatedPill extends StatefulWidget {
   /// Short description shown in the info bar when the ⓘ icon is tapped.
   final String infoText;
 
-  final String? badgeLabel;
   final bool highlighted;
   final VoidCallback? onTap;
 
@@ -338,27 +336,6 @@ class _AnimatedPillState extends State<_AnimatedPill> {
                         letterSpacing: 0.2,
                       ),
                     ),
-                    if (widget.badgeLabel != null) ...<Widget>[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          widget.badgeLabel!,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
                     if (widget.trailingToggleValue != null) ...<Widget>[
                       const SizedBox(width: 10),
                       Container(

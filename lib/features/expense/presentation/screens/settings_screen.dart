@@ -1,4 +1,3 @@
-import 'package:characters/characters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -625,48 +624,6 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// A tile whose action is not yet available. Tapping shows a planned-feature
-  /// notice. A pill badge is shown instead of a chevron.
-  Widget _buildComingSoonTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return ListTile(
-      leading: SettingsTileIcon(icon: icon),
-      title: Text(
-        title,
-        style: const TextStyle(
-            color: AppColors.textDark, fontWeight: FontWeight.w700),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-      ),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceAccent,
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-        ),
-        child: const Text(
-          'Soon',
-          style: TextStyle(
-            color: AppColors.primaryBlue,
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ),
-      onTap: () => showPlannedFeatureNotice(
-        context,
-        title: title,
-        message: 'This security feature is coming in a future update.',
-      ),
-    );
-  }
-
   /// A destructive action tile with red accent colours.
   Widget _buildDangerTile({
     required IconData icon,
@@ -837,8 +794,8 @@ class SettingsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                notes!.characters.length > _kMaxReleaseNotesLength
-                    ? '${notes.characters.take(_kMaxReleaseNotesLength).toString().trimRight()}\u2026'
+                notes.length > _kMaxReleaseNotesLength
+                    ? '${notes.substring(0, _kMaxReleaseNotesLength).trimRight()}\u2026'
                     : notes,
                 style:
                     const TextStyle(fontSize: 12, color: AppColors.textMuted),

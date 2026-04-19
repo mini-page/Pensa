@@ -48,7 +48,6 @@ class _UnifiedScannerScreenState extends ConsumerState<UnifiedScannerScreen> {
 
   // AI tab state
   String? _capturedImagePath;
-  bool _isCapturing = false;
   bool _isPicking = false;
   bool _isProcessing = false;
 
@@ -164,30 +163,6 @@ class _UnifiedScannerScreenState extends ConsumerState<UnifiedScannerScreen> {
   }
 
   // ── AI scan logic ─────────────────────────────────────────────────────────
-
-  Future<void> _captureAiPhoto() async {
-    if (_isCapturing || _isProcessing) return;
-    setState(() => _isCapturing = true);
-    try {
-      final bytes = await _aiController.captureImage();
-      if (!mounted) return;
-      if (bytes == null) {
-        setState(() => _isCapturing = false);
-        return;
-      }
-      final dir = await getTemporaryDirectory();
-      final path =
-          '${dir.path}/xpensa_ai_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      await File(path).writeAsBytes(bytes);
-      if (!mounted) return;
-      setState(() {
-        _capturedImagePath = path;
-        _isCapturing = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _isCapturing = false);
-    }
-  }
 
   Future<void> _aiPickGallery() async {
     if (_isPicking || _isProcessing) return;
@@ -582,12 +557,11 @@ class _UnifiedScannerScreenState extends ConsumerState<UnifiedScannerScreen> {
     );
   }
 
-  // ── AI controls: Flash + Shutter + Gallery ────────────────────────────────
+  // ── AI controls: Flash + Gallery ─────────────────────────────────────────
 
   Widget _buildAiControls() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Flash
         ValueListenableBuilder<MobileScannerState>(
@@ -602,49 +576,9 @@ class _UnifiedScannerScreenState extends ConsumerState<UnifiedScannerScreen> {
             );
           },
         ),
-        const SizedBox(width: 28),
+        const SizedBox(width: 40),
 
-        // Shutter button (larger)
-        GestureDetector(
-          onTap: _isCapturing ? null : _captureAiPhoto,
-          child: _isCapturing
-              ? Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white)),
-                  ),
-                )
-              : Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white70, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 8,
-                          spreadRadius: 1)
-                    ],
-                  ),
-                  child: const Icon(Icons.camera_alt_rounded,
-                      color: Colors.black87, size: 32),
-                ),
-        ),
-        const SizedBox(width: 28),
-
-        // Gallery
+        // Gallery / pick photo
         _ControlButton(
           icon: Icons.photo_library_outlined,
           label: 'Gallery',

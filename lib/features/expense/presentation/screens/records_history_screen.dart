@@ -52,7 +52,6 @@ class RecordsHistoryScreen extends ConsumerStatefulWidget {
 
 class _RecordsHistoryScreenState extends ConsumerState<RecordsHistoryScreen> {
   static const String _allAccountsKey = '__all_accounts__';
-  static const String _allCategoriesKey = '__all_categories__';
 
   RecordsFilter _selectedFilter = RecordsFilter.all;
   String _selectedAccountFilter = _allAccountsKey;

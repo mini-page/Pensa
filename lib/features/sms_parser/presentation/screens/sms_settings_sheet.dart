@@ -72,11 +72,12 @@ class _SmsSettingsSheetState extends ConsumerState<SmsSettingsSheet> {
   Future<void> _checkPermission() async {
     setState(() => _checkingPermission = true);
     final granted = await SmsPermissionHelper.isGranted();
-    if (mounted)
+    if (mounted) {
       setState(() {
         _permissionGranted = granted;
         _checkingPermission = false;
       });
+    }
   }
 
   @override
