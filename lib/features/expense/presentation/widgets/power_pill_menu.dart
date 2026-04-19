@@ -8,8 +8,12 @@ import '../../../../core/theme/app_colors.dart';
 /// An expandable power FAB.
 ///
 /// Shows a circular `+` button. When tapped the button rotates 135° (making it
-/// look like ×) and four action pills animate up above it:
-///   Quick Add · {symbol} Scanner · {symbol} Voice (Soon) · SMS (Soon)
+/// look like ×) and five action pills animate up above it:
+///   Quick Add · Pay Directly · Scanner · Voice · SMS
+///
+/// The SMS pill has a split interaction:
+///   - Tapping the label / icon area opens the SMS settings sheet.
+///   - The inline toggle switch toggles SMS parsing on/off directly.
 ///
 /// Use [PowerFabState] via a [GlobalKey] to imperatively [close] the menu
 /// (e.g. from a barrier tap in the parent).
@@ -18,14 +22,34 @@ class PowerFab extends StatefulWidget {
     super.key,
     required this.onQuickAdd,
     required this.onScanner,
+    required this.onPayDirectly,
+    required this.onVoice,
+    required this.onSms,
     required this.onToggle,
+    required this.smsParsingEnabled,
+    required this.onSmsToggle,
   });
 
   final VoidCallback onQuickAdd;
   final VoidCallback onScanner;
 
+  /// Opens the UPI QR scanner for the "Pay Directly" flow.
+  final VoidCallback onPayDirectly;
+
+  /// Opens the voice entry bottom sheet.
+  final VoidCallback onVoice;
+
+  /// Opens the SMS settings sheet.
+  final VoidCallback onSms;
+
   /// Called whenever the open/closed state changes. `true` = opened.
   final ValueChanged<bool> onToggle;
+
+  /// Current SMS parsing enabled state (drives the inline toggle).
+  final bool smsParsingEnabled;
+
+  /// Called when the user taps the inline SMS toggle switch.
+  final ValueChanged<bool> onSmsToggle;
 
   @override
   PowerFabState createState() => PowerFabState();
@@ -91,26 +115,36 @@ class PowerFabState extends State<PowerFab>
         if (_open) ...<Widget>[
           _AnimatedPill(
             animation: _ctrl,
-            staggerStart: 0.3,
+            staggerStart: 0.4,
             icon: Icons.sms_outlined,
             label: 'SMS',
-            badgeLabel: 'Soon',
+            onTap: () => _closeAndRun(widget.onSms),
+            trailingToggleValue: widget.smsParsingEnabled,
+            onTrailingToggle: widget.onSmsToggle,
+          ),
+          const SizedBox(height: 8),
+          _AnimatedPill(
+            animation: _ctrl,
+            staggerStart: 0.3,
+            icon: Icons.mic_none_rounded,
+            label: 'Voice',
+            onTap: () => _closeAndRun(widget.onVoice),
           ),
           const SizedBox(height: 8),
           _AnimatedPill(
             animation: _ctrl,
             staggerStart: 0.2,
-            icon: Icons.mic_none_rounded,
-            label: 'Voice',
-            badgeLabel: 'Soon',
+            icon: Icons.qr_code_scanner_rounded,
+            label: 'Scanner',
+            onTap: () => _closeAndRun(widget.onScanner),
           ),
           const SizedBox(height: 8),
           _AnimatedPill(
             animation: _ctrl,
             staggerStart: 0.1,
-            icon: Icons.qr_code_scanner_rounded,
-            label: 'Scanner',
-            onTap: () => _closeAndRun(widget.onScanner),
+            icon: Icons.currency_rupee_rounded,
+            label: 'Pay Directly',
+            onTap: () => _closeAndRun(widget.onPayDirectly),
           ),
           const SizedBox(height: 8),
           _AnimatedPill(
@@ -138,9 +172,7 @@ class PowerFabState extends State<PowerFab>
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: _open
-                    ? const Color(0xFF1A2340)
-                    : AppColors.primaryBlue,
+                color: _open ? const Color(0xFF1A2340) : AppColors.primaryBlue,
                 shape: BoxShape.circle,
                 boxShadow: <BoxShadow>[
                   BoxShadow(
@@ -178,6 +210,8 @@ class _AnimatedPill extends StatelessWidget {
     this.badgeLabel,
     this.highlighted = false,
     this.onTap,
+    this.trailingToggleValue,
+    this.onTrailingToggle,
   });
 
   final Animation<double> animation;
@@ -189,6 +223,11 @@ class _AnimatedPill extends StatelessWidget {
   final String? badgeLabel;
   final bool highlighted;
   final VoidCallback? onTap;
+
+  /// When non-null, a compact toggle switch is shown at the trailing edge
+  /// of the pill. Tapping the toggle does NOT trigger [onTap].
+  final bool? trailingToggleValue;
+  final ValueChanged<bool>? onTrailingToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -221,7 +260,12 @@ class _AnimatedPill extends StatelessWidget {
               : null,
           borderRadius: BorderRadius.circular(28),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            padding: EdgeInsets.only(
+              left: 18,
+              right: trailingToggleValue != null ? 6 : 18,
+              top: 14,
+              bottom: 14,
+            ),
             decoration: BoxDecoration(
               color: highlighted ? AppColors.primaryBlue : _kPillColor,
               borderRadius: BorderRadius.circular(28),
@@ -264,6 +308,46 @@ class _AnimatedPill extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+                if (trailingToggleValue != null) ...<Widget>[
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 1,
+                    height: 20,
+                    color: Colors.white.withValues(alpha: 0.25),
+                  ),
+                  // GestureDetector absorbs taps so they don't bubble to InkWell
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onTrailingToggle?.call(!trailingToggleValue!);
+                    },
+                    child: SizedBox(
+                      // Clamp layout height to icon row height so the pill
+                      // stays the same height as all other pills.
+                      width: 44,
+                      height: 20,
+                      child: OverflowBox(
+                        maxWidth: 58,
+                        maxHeight: 30,
+                        child: Transform.scale(
+                          scale: 0.6,
+                          child: Switch(
+                            value: trailingToggleValue!,
+                            onChanged: onTrailingToggle,
+                            activeColor: Colors.white,
+                            activeTrackColor:
+                                AppColors.primaryBlue.withValues(alpha: 0.7),
+                            inactiveThumbColor: Colors.white60,
+                            inactiveTrackColor: Colors.white24,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
                       ),
                     ),
                   ),

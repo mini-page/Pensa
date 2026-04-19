@@ -26,6 +26,16 @@ class AppPreferencesModel {
     this.customIncomeCategoriesJson = '',
     this.builtInExpenseCategoryOverridesJson = '',
     this.builtInIncomeCategoryOverridesJson = '',
+    this.smsParsingEnabled = false,
+    this.smsDefaultAccountId = '',
+    this.smsDefaultCategory = '',
+    this.aiApiKey = '',
+    this.aiEnabled = false,
+    this.aiModelId = 'gemini-2.0-flash',
+    this.aiSmartSearchEnabled = true,
+    this.aiVoiceEnabled = true,
+    this.aiScannerEnabled = true,
+    this.aiSmsAiEnabled = true,
   });
 
   static const AppPreferencesModel defaults = AppPreferencesModel(
@@ -51,6 +61,16 @@ class AppPreferencesModel {
     customIncomeCategoriesJson: '',
     builtInExpenseCategoryOverridesJson: '',
     builtInIncomeCategoryOverridesJson: '',
+    smsParsingEnabled: false,
+    smsDefaultAccountId: '',
+    smsDefaultCategory: '',
+    aiApiKey: '',
+    aiEnabled: false,
+    aiModelId: 'gemini-2.0-flash',
+    aiSmartSearchEnabled: true,
+    aiVoiceEnabled: true,
+    aiScannerEnabled: true,
+    aiSmsAiEnabled: true,
   );
 
   final String themeModeKey;
@@ -66,29 +86,74 @@ class AppPreferencesModel {
   final List<String> disabledExpenseCategories;
   final List<String> disabledIncomeCategories;
   final List<String> disabledAccountIds;
+
   /// User-defined display name shown in the drawer / profile screen.
   final String displayName;
+
   /// SHA-256 hash of the 4-digit PIN; empty string means PIN is not set.
   final String pinHash;
+
   /// Whether biometric lock is enabled (requires OS support).
   final bool biometricLockEnabled;
+
   /// The app version string at the time the What's New dialog was last shown.
   final String whatsNewShownVersion;
+
   /// JSON-serialised list of savings goals. Each goal:
   /// `{id, name, targetAmount, currentAmount}`.
   final String savingsGoalsJson;
+
   /// JSON-encoded list of user-defined quick-add amounts (e.g. [25, 75, 200]).
   final String customQuickAmountsJson;
+
   /// JSON-encoded list of locale-default amounts hidden by the user.
   final String hiddenDefaultAmountsJson;
+
   /// JSON-serialised list of user-defined expense categories.
   final String customExpenseCategoriesJson;
+
   /// JSON-serialised list of user-defined income categories.
   final String customIncomeCategoriesJson;
+
   /// JSON-serialised list of built-in expense category icon/colour overrides.
   final String builtInExpenseCategoryOverridesJson;
+
   /// JSON-serialised list of built-in income category icon/colour overrides.
   final String builtInIncomeCategoryOverridesJson;
+
+  // ── SMS Parsing ─────────────────────────────────────────────────────────
+
+  /// Whether SMS transaction parsing is active.
+  final bool smsParsingEnabled;
+
+  /// ID of the account to use when auto-confirming a parsed SMS transaction.
+  /// Empty string means "use app default".
+  final String smsDefaultAccountId;
+
+  /// Category name to use when auto-confirming a parsed SMS transaction.
+  /// Empty string means "use app default".
+  final String smsDefaultCategory;
+
+  /// AI (Gemini) API key entered by the user. Empty string means not set.
+  final String aiApiKey;
+
+  /// Whether the user has enabled AI-powered features (requires [aiApiKey]).
+  final bool aiEnabled;
+
+  /// The Gemini model ID selected by the user.
+  final String aiModelId;
+
+  /// Whether AI-enhanced search is enabled.
+  final bool aiSmartSearchEnabled;
+
+  /// Whether AI-enhanced voice entry is enabled.
+  final bool aiVoiceEnabled;
+
+  /// Whether AI product/receipt scanning is enabled.
+  final bool aiScannerEnabled;
+
+  /// Whether AI-assisted SMS parsing is enabled.
+  final bool aiSmsAiEnabled;
 
   bool get isPinEnabled => pinHash.isNotEmpty;
 
@@ -119,6 +184,16 @@ class AppPreferencesModel {
     String? customIncomeCategoriesJson,
     String? builtInExpenseCategoryOverridesJson,
     String? builtInIncomeCategoryOverridesJson,
+    bool? smsParsingEnabled,
+    String? smsDefaultAccountId,
+    String? smsDefaultCategory,
+    String? aiApiKey,
+    bool? aiEnabled,
+    String? aiModelId,
+    bool? aiSmartSearchEnabled,
+    bool? aiVoiceEnabled,
+    bool? aiScannerEnabled,
+    bool? aiSmsAiEnabled,
   }) {
     return AppPreferencesModel(
       themeModeKey: themeModeKey ?? this.themeModeKey,
@@ -156,9 +231,18 @@ class AppPreferencesModel {
       builtInExpenseCategoryOverridesJson:
           builtInExpenseCategoryOverridesJson ??
               this.builtInExpenseCategoryOverridesJson,
-      builtInIncomeCategoryOverridesJson:
-          builtInIncomeCategoryOverridesJson ??
-              this.builtInIncomeCategoryOverridesJson,
+      builtInIncomeCategoryOverridesJson: builtInIncomeCategoryOverridesJson ??
+          this.builtInIncomeCategoryOverridesJson,
+      smsParsingEnabled: smsParsingEnabled ?? this.smsParsingEnabled,
+      smsDefaultAccountId: smsDefaultAccountId ?? this.smsDefaultAccountId,
+      smsDefaultCategory: smsDefaultCategory ?? this.smsDefaultCategory,
+      aiApiKey: aiApiKey ?? this.aiApiKey,
+      aiEnabled: aiEnabled ?? this.aiEnabled,
+      aiModelId: aiModelId ?? this.aiModelId,
+      aiSmartSearchEnabled: aiSmartSearchEnabled ?? this.aiSmartSearchEnabled,
+      aiVoiceEnabled: aiVoiceEnabled ?? this.aiVoiceEnabled,
+      aiScannerEnabled: aiScannerEnabled ?? this.aiScannerEnabled,
+      aiSmsAiEnabled: aiSmsAiEnabled ?? this.aiSmsAiEnabled,
     );
   }
 }
@@ -197,12 +281,30 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
     String whatsNewShownVersion =
         AppPreferencesModel.defaults.whatsNewShownVersion;
     String savingsGoalsJson = AppPreferencesModel.defaults.savingsGoalsJson;
-    String customQuickAmountsJson = AppPreferencesModel.defaults.customQuickAmountsJson;
-    String hiddenDefaultAmountsJson = AppPreferencesModel.defaults.hiddenDefaultAmountsJson;
-    String customExpenseCategoriesJson = AppPreferencesModel.defaults.customExpenseCategoriesJson;
-    String customIncomeCategoriesJson = AppPreferencesModel.defaults.customIncomeCategoriesJson;
-    String builtInExpenseCategoryOverridesJson = AppPreferencesModel.defaults.builtInExpenseCategoryOverridesJson;
-    String builtInIncomeCategoryOverridesJson = AppPreferencesModel.defaults.builtInIncomeCategoryOverridesJson;
+    String customQuickAmountsJson =
+        AppPreferencesModel.defaults.customQuickAmountsJson;
+    String hiddenDefaultAmountsJson =
+        AppPreferencesModel.defaults.hiddenDefaultAmountsJson;
+    String customExpenseCategoriesJson =
+        AppPreferencesModel.defaults.customExpenseCategoriesJson;
+    String customIncomeCategoriesJson =
+        AppPreferencesModel.defaults.customIncomeCategoriesJson;
+    String builtInExpenseCategoryOverridesJson =
+        AppPreferencesModel.defaults.builtInExpenseCategoryOverridesJson;
+    String builtInIncomeCategoryOverridesJson =
+        AppPreferencesModel.defaults.builtInIncomeCategoryOverridesJson;
+    bool smsParsingEnabled = AppPreferencesModel.defaults.smsParsingEnabled;
+    String smsDefaultAccountId =
+        AppPreferencesModel.defaults.smsDefaultAccountId;
+    String smsDefaultCategory = AppPreferencesModel.defaults.smsDefaultCategory;
+    String aiApiKey = AppPreferencesModel.defaults.aiApiKey;
+    bool aiEnabled = AppPreferencesModel.defaults.aiEnabled;
+    String aiModelId = AppPreferencesModel.defaults.aiModelId;
+    bool aiSmartSearchEnabled =
+        AppPreferencesModel.defaults.aiSmartSearchEnabled;
+    bool aiVoiceEnabled = AppPreferencesModel.defaults.aiVoiceEnabled;
+    bool aiScannerEnabled = AppPreferencesModel.defaults.aiScannerEnabled;
+    bool aiSmsAiEnabled = AppPreferencesModel.defaults.aiSmsAiEnabled;
 
     try {
       if (reader.availableBytes > 0) locale = reader.readString();
@@ -233,12 +335,28 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
       if (reader.availableBytes > 0) biometricLockEnabled = reader.readBool();
       if (reader.availableBytes > 0) whatsNewShownVersion = reader.readString();
       if (reader.availableBytes > 0) savingsGoalsJson = reader.readString();
-      if (reader.availableBytes > 0) customQuickAmountsJson = reader.readString();
-      if (reader.availableBytes > 0) hiddenDefaultAmountsJson = reader.readString();
-      if (reader.availableBytes > 0) customExpenseCategoriesJson = reader.readString();
-      if (reader.availableBytes > 0) customIncomeCategoriesJson = reader.readString();
-      if (reader.availableBytes > 0) builtInExpenseCategoryOverridesJson = reader.readString();
-      if (reader.availableBytes > 0) builtInIncomeCategoryOverridesJson = reader.readString();
+      if (reader.availableBytes > 0)
+        customQuickAmountsJson = reader.readString();
+      if (reader.availableBytes > 0)
+        hiddenDefaultAmountsJson = reader.readString();
+      if (reader.availableBytes > 0)
+        customExpenseCategoriesJson = reader.readString();
+      if (reader.availableBytes > 0)
+        customIncomeCategoriesJson = reader.readString();
+      if (reader.availableBytes > 0)
+        builtInExpenseCategoryOverridesJson = reader.readString();
+      if (reader.availableBytes > 0)
+        builtInIncomeCategoryOverridesJson = reader.readString();
+      if (reader.availableBytes > 0) smsParsingEnabled = reader.readBool();
+      if (reader.availableBytes > 0) smsDefaultAccountId = reader.readString();
+      if (reader.availableBytes > 0) smsDefaultCategory = reader.readString();
+      if (reader.availableBytes > 0) aiApiKey = reader.readString();
+      if (reader.availableBytes > 0) aiEnabled = reader.readBool();
+      if (reader.availableBytes > 0) aiModelId = reader.readString();
+      if (reader.availableBytes > 0) aiSmartSearchEnabled = reader.readBool();
+      if (reader.availableBytes > 0) aiVoiceEnabled = reader.readBool();
+      if (reader.availableBytes > 0) aiScannerEnabled = reader.readBool();
+      if (reader.availableBytes > 0) aiSmsAiEnabled = reader.readBool();
     } catch (_) {
       // Fallback if reading fails
     }
@@ -268,6 +386,16 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
       customIncomeCategoriesJson: customIncomeCategoriesJson,
       builtInExpenseCategoryOverridesJson: builtInExpenseCategoryOverridesJson,
       builtInIncomeCategoryOverridesJson: builtInIncomeCategoryOverridesJson,
+      smsParsingEnabled: smsParsingEnabled,
+      smsDefaultAccountId: smsDefaultAccountId,
+      smsDefaultCategory: smsDefaultCategory,
+      aiApiKey: aiApiKey,
+      aiEnabled: aiEnabled,
+      aiModelId: aiModelId,
+      aiSmartSearchEnabled: aiSmartSearchEnabled,
+      aiVoiceEnabled: aiVoiceEnabled,
+      aiScannerEnabled: aiScannerEnabled,
+      aiSmsAiEnabled: aiSmsAiEnabled,
     );
   }
 
@@ -300,7 +428,17 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
       ..writeString(obj.customExpenseCategoriesJson)
       ..writeString(obj.customIncomeCategoriesJson)
       ..writeString(obj.builtInExpenseCategoryOverridesJson)
-      ..writeString(obj.builtInIncomeCategoryOverridesJson);
+      ..writeString(obj.builtInIncomeCategoryOverridesJson)
+      ..writeBool(obj.smsParsingEnabled)
+      ..writeString(obj.smsDefaultAccountId)
+      ..writeString(obj.smsDefaultCategory)
+      ..writeString(obj.aiApiKey)
+      ..writeBool(obj.aiEnabled)
+      ..writeString(obj.aiModelId)
+      ..writeBool(obj.aiSmartSearchEnabled)
+      ..writeBool(obj.aiVoiceEnabled)
+      ..writeBool(obj.aiScannerEnabled)
+      ..writeBool(obj.aiSmsAiEnabled);
   }
 
   List<String> _readStringList(BinaryReader reader) {
@@ -315,5 +453,3 @@ class AppPreferencesModelAdapter extends TypeAdapter<AppPreferencesModel> {
     }
   }
 }
-
-

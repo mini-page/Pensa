@@ -18,6 +18,8 @@ import 'categories_screen.dart';
 import 'home_screen.dart';
 import 'stats_screen.dart';
 import 'voice_entry_screen.dart';
+import '../../../sms_parser/presentation/screens/sms_settings_sheet.dart';
+import '../../../sms_parser/presentation/provider/sms_providers.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -161,8 +163,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               _WhatsNewItem(
                 emoji: '📊',
                 title: 'Budget Progress Bar',
-                detail:
-                    'See your top budget right on the home header',
+                detail: 'See your top budget right on the home header',
               ),
               _WhatsNewItem(
                 emoji: '📅',
@@ -263,7 +264,22 @@ class _AppShellState extends ConsumerState<AppShell> {
               onScanner: () {
                 if (mounted) AppRoutes.pushScanner(context);
               },
+              onPayDirectly: () {
+                if (mounted) AppRoutes.pushUpiScanner(context);
+              },
+              onVoice: () {
+                if (mounted) _showVoiceEntry();
+              },
+              onSms: () {
+                if (mounted) showSmsSettingsSheet(context);
+              },
               onToggle: (open) => setState(() => _fabOpen = open),
+              smsParsingEnabled: ref.watch(smsParsingEnabledProvider),
+              onSmsToggle: (enabled) {
+                ref
+                    .read(appPreferencesControllerProvider)
+                    .setSmsParsingEnabled(enabled);
+              },
             ),
           ),
         ],
@@ -326,6 +342,8 @@ class _AppShellState extends ConsumerState<AppShell> {
         if (mounted) await AppRoutes.pushScanner(context);
       case 'voice':
         if (mounted) await _showVoiceEntry();
+      case 'sms':
+        if (mounted) await showSmsSettingsSheet(context);
       // 'open_app' — just bring app to foreground, no extra navigation needed
     }
   }

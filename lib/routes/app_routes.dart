@@ -6,6 +6,7 @@ import '../features/expense/presentation/screens/notifications_screen.dart';
 import '../features/expense/presentation/screens/records_history_screen.dart';
 import '../features/expense/presentation/screens/scanner_screen.dart';
 import '../features/expense/presentation/screens/settings_screen.dart';
+import '../features/expense/presentation/screens/upi_scanner_screen.dart';
 
 /// Centralised navigation helpers for XPensa.
 ///
@@ -105,6 +106,36 @@ abstract final class AppRoutes {
     return Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => const NotificationsScreen(),
+      ),
+    );
+  }
+
+  // ── UPI Scanner (Pay Directly) ─────────────────────────────────────────────
+
+  /// Push the UPI-payment QR scanner for the "Pay Directly" flow.
+  static Future<void> pushUpiScanner(BuildContext context) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => const UpiScannerScreen()),
+    );
+  }
+
+  /// Replace the current route with [AddExpenseScreen] in pay-mode.
+  ///
+  /// Used by [UpiScannerScreen] after a successful scan so that the user returns
+  /// directly to the expense form (pre-filled, pay mode) rather than the scanner.
+  static void replaceWithPayExpense(
+    BuildContext context, {
+    required String payUpiUri,
+    double? initialAmount,
+    String? initialNote,
+  }) {
+    Navigator.of(context).pushReplacement<void, void>(
+      MaterialPageRoute<void>(
+        builder: (_) => AddExpenseScreen(
+          payUpiUri: payUpiUri,
+          initialAmount: initialAmount,
+          initialNote: initialNote,
+        ),
       ),
     );
   }
