@@ -49,6 +49,7 @@ class RecordsFilterChips extends StatelessWidget {
                       color: Colors.white,
                     )
                   : null,
+              // Intentionally use a custom selected-state icon via avatar.
               showCheckmark: false,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               side: BorderSide(

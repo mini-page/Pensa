@@ -467,12 +467,14 @@ class SettingsScreen extends ConsumerWidget {
         value: value,
         onChanged: onChanged,
         options: items
-            .map(
-              (item) => (
-                value: item.value!,
-                label: (item.child as Text).data ?? item.value!,
-              ),
-            )
+            .where((item) => item.value != null)
+            .map((item) {
+              final labelWidget = item.child;
+              final label = labelWidget is Text
+                  ? (labelWidget.data ?? item.value!)
+                  : item.value!;
+              return (value: item.value!, label: label);
+            })
             .toList(growable: false),
       ),
     );
@@ -1131,6 +1133,10 @@ class _SettingsChoiceMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (options.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     final selectedLabel = options
         .firstWhere(
           (option) => option.value == value,

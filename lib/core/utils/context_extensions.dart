@@ -13,6 +13,7 @@ extension ContextExtensions on BuildContext {
     String? actionLabel,
     VoidCallback? onAction,
   }) {
+    final isDark = Theme.of(this).brightness == Brightness.dark;
     final (IconData icon, Color accent) = switch (type) {
       AppFeedbackType.success => (Icons.check_circle_rounded, AppColors.success),
       AppFeedbackType.error => (Icons.error_rounded, AppColors.danger),
@@ -20,9 +21,7 @@ extension ContextExtensions on BuildContext {
       AppFeedbackType.info => (Icons.info_rounded, AppColors.primaryBlue),
     };
 
-    final textColor = Theme.of(this).brightness == Brightness.dark
-        ? Colors.white
-        : AppColors.textDark;
+    final textColor = isDark ? Colors.white : AppColors.textDark;
 
     final messenger = ScaffoldMessenger.of(this);
     messenger
@@ -45,9 +44,7 @@ extension ContextExtensions on BuildContext {
               vertical: AppSpacing.sm,
             ),
             decoration: BoxDecoration(
-              color: Theme.of(this).brightness == Brightness.dark
-                  ? const Color(0xFF1A2438)
-                  : Colors.white,
+              color: isDark ? const Color(0xFF1A2438) : Colors.white,
               borderRadius: BorderRadius.circular(AppRadii.lg),
               boxShadow: const <BoxShadow>[
                 BoxShadow(

@@ -42,7 +42,7 @@ class AppTheme {
       ),
       useMaterial3: true,
       textTheme: _textTheme(Colors.white),
-      popupMenuTheme: _popupMenuTheme(isDark: true),
+      popupMenuTheme: _popupMenuTheme(useDarkTheme: true),
       chipTheme: _chipTheme(Brightness.dark),
       snackBarTheme: _snackBarTheme(),
     );
@@ -59,16 +59,16 @@ class AppTheme {
     );
   }
 
-  static PopupMenuThemeData _popupMenuTheme({bool isDark = false}) {
+  static PopupMenuThemeData _popupMenuTheme({bool useDarkTheme = false}) {
     return PopupMenuThemeData(
-      color: isDark ? const Color(0xFF1A2438) : Colors.white,
+      color: useDarkTheme ? const Color(0xFF1A2438) : Colors.white,
       elevation: 0,
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
       ),
       textStyle: TextStyle(
-        color: isDark ? Colors.white : AppColors.textDark,
+        color: useDarkTheme ? Colors.white : AppColors.textDark,
         fontWeight: FontWeight.w600,
       ),
     );
