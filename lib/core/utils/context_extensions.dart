@@ -46,6 +46,10 @@ extension ContextExtensions on BuildContext {
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1A2438) : Colors.white,
               borderRadius: BorderRadius.circular(AppRadii.lg),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.35),
+                width: 1.2,
+              ),
               boxShadow: const <BoxShadow>[
                 BoxShadow(
                   color: AppColors.cardShadow,
